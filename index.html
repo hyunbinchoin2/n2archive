@@ -259,23 +259,10 @@ textarea.fc2{resize:vertical;line-height:1.6}
         <div class="rc-chk"></div>
       </div>
     </div>
-    <div class="demo">
-      <div class="demo-lbl">데모 계정 (클릭 시 자동 입력)</div>
-      <div class="demo-pills">
-        <span class="dpill" data-demo="admin">admin (관리자)</span>
-        <span class="dpill" data-demo="leader1">leader1 (팀장)</span>
-        <span class="dpill" data-demo="staff1">staff1 (직원)</span>
-        <span class="dpill" data-demo="bankuser">bankuser (은행)</span>
-      </div>
-    </div>
+    
     <div id="bk-wrap" class="fg" style="display:none">
       <label>소속 저축은행</label>
-      <select class="fc" id="sel-bk">
-        <option value="">-- 선택 --</option>
-        <option>한국저축은행</option><option>OK저축은행</option>
-        <option>SBI저축은행</option><option>웰컴저축은행</option>
-        <option>페퍼저축은행</option><option>애큐온저축은행</option>
-      </select>
+      <select class="fc" id="sel-bk"><option value="">-- 선택 --</option></select>
     </div>
     <div class="fg"><label>아이디</label><input type="text" class="fc" id="li-id" placeholder="아이디"></div>
     <div class="fg"><label>비밀번호</label><input type="password" class="fc" id="li-pw" placeholder="비밀번호"></div>
@@ -301,12 +288,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       <div id="sb-bk" style="display:none">
         <div class="bk-card">
           <div class="bk-lbl">📍 조회 범위</div>
-          <select id="bk-filter">
-            <option value="all">전체 저축은행</option>
-            <option>한국저축은행</option><option>OK저축은행</option>
-            <option>SBI저축은행</option><option>웰컴저축은행</option>
-            <option>페퍼저축은행</option>
-          </select>
+          <select id="bk-filter"><option value="all">전체 저축은행</option></select>
         </div>
       </div>
       <div class="sb-lbl">메인</div>
@@ -353,13 +335,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
           </div>
           <div class="card" id="dash-chart-card">
             <div class="card-h"><h3 id="dash-chart-title">은행별 신청 현황</h3></div>
-            <div class="card-b" id="dash-chart-body">
-              <div class="pbar-it"><div class="pbar-row"><span>한국저축은행</span><span>7건</span></div><div class="pbar"><div class="pbar-f" style="width:70%;background:var(--p)"></div></div></div>
-              <div class="pbar-it"><div class="pbar-row"><span>OK저축은행</span><span>5건</span></div><div class="pbar"><div class="pbar-f" style="width:50%;background:var(--sky)"></div></div></div>
-              <div class="pbar-it"><div class="pbar-row"><span>SBI저축은행</span><span>4건</span></div><div class="pbar"><div class="pbar-f" style="width:40%;background:var(--ok)"></div></div></div>
-              <div class="pbar-it"><div class="pbar-row"><span>웰컴저축은행</span><span>3건</span></div><div class="pbar"><div class="pbar-f" style="width:30%;background:var(--warn)"></div></div></div>
-              <div class="pbar-it"><div class="pbar-row"><span>페퍼저축은행</span><span>3건</span></div><div class="pbar"><div class="pbar-f" style="width:30%;background:var(--a)"></div></div></div>
-            </div>
+            <div class="card-b" id="dash-chart-body"><p style="text-align:center;color:#A8B4CE;font-size:11px;padding:20px">데이터 로딩 중...</p></div>
           </div>
         </div>
       </div>
@@ -376,7 +352,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
           <div class="sw"><input type="text" id="f-srch" placeholder="제목·번호 검색..."></div>
           <select class="fc2" id="f-sta"><option value="">전체 상태</option><option>대기</option><option>처리중</option><option>완료</option></select>
           <select class="fc2" id="f-pri"><option value="">전체 긴급도</option><option>긴급</option><option>높음</option><option>보통</option></select>
-          <select class="fc2" id="f-bk" style="display:none"><option value="">전체 은행</option><option>한국저축은행</option><option>OK저축은행</option><option>SBI저축은행</option><option>웰컴저축은행</option><option>페퍼저축은행</option></select>
+          <select class="fc2" id="f-bk" style="display:none"><option value="">전체 은행</option></select>
         </div>
         <div class="card">
           <div class="card-h"><h3>신청 목록<span class="ch-sub" id="lt-cnt">총 0건</span></h3></div>
@@ -413,7 +389,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         <div class="card" style="margin-bottom:10px">
           <div class="card-h"><h3>📋 기본 정보</h3></div>
           <div class="card-b"><div class="fgrid">
-            <div class="fg2" id="nf-bk-wrap"><label>저축은행<span class="req">*</span></label><select class="fc2" id="nf-bk-sel"><option>한국저축은행</option><option>OK저축은행</option><option>SBI저축은행</option><option>웰컴저축은행</option><option>페퍼저축은행</option></select></div>
+            <div class="fg2" id="nf-bk-wrap"><label>저축은행<span class="req">*</span></label><select class="fc2" id="nf-bk-sel"><option value="">-- 선택 --</option></select></div>
             <div class="fg2"><label>업무 영역<span class="req">*</span></label>
               <select class="fc2" id="nf-area">
                 <option value="">-- 영역 선택 --</option>
@@ -489,38 +465,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
           </div>
         </div>
         <div class="card"><table><thead><tr><th>은행명</th><th>시스템 버전</th><th>계약 상태</th><th>담당자</th><th>이번달</th><th>SLA</th><th>최근 신청</th><th>관리</th></tr></thead>
-        <tbody id="banks-tbody">
-          <tr>
-            <td><strong>한국저축은행</strong></td><td style="font-size:10px">v4.2.1</td>
-            <td><span class="bx b-don">정상</span></td><td>김민수</td><td>7건</td>
-            <td style="color:var(--ok);font-weight:600">100%</td><td>2025.07.14</td>
-            <td style="display:flex;gap:4px"><button class="btn btn-g btn-xs" data-bank="한국저축은행" data-action="detail">상세</button><button class="btn btn-g btn-xs" data-bank="한국저축은행" data-action="edit">편집</button></td>
-          </tr>
-          <tr>
-            <td><strong>OK저축은행</strong></td><td style="font-size:10px">v4.1.8</td>
-            <td><span class="bx b-don">정상</span></td><td>이지은</td><td>5건</td>
-            <td style="color:var(--ok);font-weight:600">100%</td><td>2025.07.13</td>
-            <td style="display:flex;gap:4px"><button class="btn btn-g btn-xs" data-bank="OK저축은행" data-action="detail">상세</button><button class="btn btn-g btn-xs" data-bank="OK저축은행" data-action="edit">편집</button></td>
-          </tr>
-          <tr>
-            <td><strong>SBI저축은행</strong></td><td style="font-size:10px">v4.2.0</td>
-            <td><span class="bx b-don">정상</span></td><td>박준혁</td><td>4건</td>
-            <td style="color:var(--warn);font-weight:600">95%</td><td>2025.07.11</td>
-            <td style="display:flex;gap:4px"><button class="btn btn-g btn-xs" data-bank="SBI저축은행" data-action="detail">상세</button><button class="btn btn-g btn-xs" data-bank="SBI저축은행" data-action="edit">편집</button></td>
-          </tr>
-          <tr>
-            <td><strong>웰컴저축은행</strong></td><td style="font-size:10px">v4.0.5</td>
-            <td><span class="bx b-pro">업그레이드 예정</span></td><td>최수진</td><td>3건</td>
-            <td style="color:var(--ok);font-weight:600">100%</td><td>2025.07.10</td>
-            <td style="display:flex;gap:4px"><button class="btn btn-g btn-xs" data-bank="웰컴저축은행" data-action="detail">상세</button><button class="btn btn-g btn-xs" data-bank="웰컴저축은행" data-action="edit">편집</button></td>
-          </tr>
-          <tr>
-            <td><strong>페퍼저축은행</strong></td><td style="font-size:10px">v4.2.1</td>
-            <td><span class="bx b-don">정상</span></td><td>김민수</td><td>3건</td>
-            <td style="color:var(--ok);font-weight:600">100%</td><td>2025.07.09</td>
-            <td style="display:flex;gap:4px"><button class="btn btn-g btn-xs" data-bank="페퍼저축은행" data-action="detail">상세</button><button class="btn btn-g btn-xs" data-bank="페퍼저축은행" data-action="edit">편집</button></td>
-          </tr>
-        </tbody></table></div>
+        <tbody id="banks-tbody"></tbody></table></div>
       </div>
 
       <!-- 사용자 관리 -->
@@ -563,12 +508,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         <div class="ib ib-y"><span>💡</span><p><strong>계정 생성 방식:</strong> N2SOFT 관리자가 직접 생성하거나, 각 저축은행 담당자에게 계정 생성 권한을 위임할 수 있습니다. 위임 시 해당 은행 직원만 생성/관리 가능합니다.</p></div>
         <!-- 은행 필터 -->
         <div class="fbar">
-          <select class="fc2" id="ba-filter-bank" style="min-width:140px">
-            <option value="">전체 저축은행</option>
-            <option>한국저축은행</option><option>OK저축은행</option>
-            <option>SBI저축은행</option><option>웰컴저축은행</option>
-            <option>페퍼저축은행</option>
-          </select>
+          <select class="fc2" id="ba-filter-bank" style="min-width:140px"><option value="">전체 저축은행</option></select>
         </div>
         <div class="card">
           <div class="card-h"><h3>저축은행 직원 계정<span class="ch-sub" id="bank-acc-cnt">3명</span></h3></div>
@@ -650,7 +590,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         <div class="ap-ttl">👑 팀장 처리 영역 – 담당자 배정</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:3px">담당자 배정<span class="req">*</span></label>
-            <select class="fc2" id="m-assign-sel"><option value="">-- 배정 --</option><option>이지은</option><option>박준혁</option><option>최수진</option><option>정한솔</option></select>
+            <select class="fc2" id="m-assign-sel"><option value="">-- 배정 --</option></select>
           </div>
           <div><label style="font-size:11px;font-weight:600;display:block;margin-bottom:3px">처리 예정일</label><input type="date" class="fc2" id="m-expect-date"></div>
         </div>
@@ -667,16 +607,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       </div>
       <div class="tl">
         <div class="tl-ttl">📋 처리 이력</div>
-        <div id="m-timeline">
-          <div class="tl-it">
-            <div class="tl-dot on">📥</div>
-            <div><div><span class="tw">홍길동 (한국저축은행)</span><span class="tt">2025.07.14 09:23</span></div><div class="tm">신청서 제출 완료. 긴급 처리 요청.</div></div>
-          </div>
-          <div class="tl-it">
-            <div class="tl-dot">🔔</div>
-            <div><div><span class="tw">시스템 자동 알림</span><span class="tt">2025.07.14 09:23</span></div><div class="tm">긴급 신청으로 N2SOFT 담당팀에 즉시 알림 발송.</div></div>
-          </div>
-        </div>
+        <div id="m-timeline"></div>
       </div>
     </div>
     <div class="mft"><button class="btn btn-g" id="mc-close">닫기</button></div>
@@ -728,12 +659,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         <div class="fg2"><label>비밀번호<span class="req">*</span></label><input type="password" class="fc2" id="cbu-pw" placeholder="초기 비밀번호"></div>
         <div class="fg2"><label>비밀번호 확인<span class="req">*</span></label><input type="password" class="fc2" id="cbu-pw2" placeholder="비밀번호 재입력"></div>
         <div class="fg2"><label>소속 저축은행<span class="req">*</span></label>
-          <select class="fc2" id="cbu-bank">
-            <option value="">-- 선택 --</option>
-            <option>한국저축은행</option><option>OK저축은행</option>
-            <option>SBI저축은행</option><option>웰컴저축은행</option>
-            <option>페퍼저축은행</option><option>애큐온저축은행</option>
-          </select>
+          <select class="fc2" id="cbu-bank"><option value="">-- 선택 --</option></select>
         </div>
         <div class="fg2"><label>권한</label>
           <select class="fc2" id="cbu-perm">
@@ -764,10 +690,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       <div class="card">
         <div class="card-h"><h3>현재 팀 목록</h3></div>
         <table><thead><tr><th>팀명</th><th>팀장</th><th>팀원 수</th><th>관리</th></tr></thead>
-        <tbody id="teams-tbody">
-          <tr><td><strong>1팀</strong></td><td>김민수</td><td>3명</td><td><button class="btn btn-g btn-xs" data-team-del="1팀">삭제</button></td></tr>
-          <tr><td><strong>2팀</strong></td><td>-</td><td>1명</td><td><button class="btn btn-g btn-xs" data-team-del="2팀">삭제</button></td></tr>
-        </tbody></table>
+        <tbody id="teams-tbody"></tbody></table>
       </div>
     </div>
     <div class="mft"><button class="btn btn-g" data-close="ov-teams">닫기</button></div>
@@ -832,7 +755,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         <div class="fg2 ff"><label>은행명<span class="req">*</span></label><input type="text" class="fc2" id="new-bank-name" placeholder="예: 한솔저축은행"></div>
         <div class="fg2"><label>시스템 버전</label><input type="text" class="fc2" id="new-bank-ver" placeholder="v4.2.1"></div>
         <div class="fg2"><label>N2SOFT 담당자</label>
-          <select class="fc2" id="new-bank-mgr"><option>김민수</option><option>이지은</option><option>박준혁</option><option>최수진</option></select>
+          <select class="fc2" id="new-bank-mgr"><option value="">-- 선택 --</option></select>
         </div>
         <div class="fg2"><label>계약 상태</label>
           <select class="fc2" id="new-bank-status"><option>정상</option><option>업그레이드 예정</option><option>계약 만료 예정</option></select>
@@ -1459,6 +1382,40 @@ document.getElementById("bk-filter").addEventListener("change", function() {
 document.getElementById("ba-filter-bank").addEventListener("change", function() { renderBankAccounts(this.value); });
 
 // ── 페이지 이동
+// ── 저축은행 관리 테이블 렌더링
+async function renderBanks() {
+  const snap  = await getDocs(collection(db, "banks"));
+  const banks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const tbody = document.getElementById("banks-tbody");
+  if (!tbody) return;
+  const colors = ["var(--ok)","var(--ok)","var(--warn)","var(--a)"];
+  tbody.innerHTML = banks.map(b => {
+    const bankTix  = (window._tickets || []).filter(t => t.bankId === b.id);
+    const thisMonth = bankTix.filter(t => {
+      if (!t.createdAt || !t.createdAt.toDate) return false;
+      const d = t.createdAt.toDate();
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    const lastTix  = bankTix[0];
+    const lastDate = lastTix && lastTix.createdAt && lastTix.createdAt.toDate
+      ? lastTix.createdAt.toDate().toLocaleDateString("ko-KR") : "-";
+    const slaColor = b.contractStatus === "정상" ? "var(--ok)" : "var(--warn)";
+    return "<tr>" +
+      "<td><strong>" + b.name + "</strong></td>" +
+      "<td style='font-size:10px'>" + (b.systemVersion || "-") + "</td>" +
+      "<td><span class='bx " + (b.contractStatus === "정상" ? "b-don" : "b-pro") + "'>" + (b.contractStatus || "-") + "</span></td>" +
+      "<td>" + (b.managerName || "-") + "</td>" +
+      "<td>" + thisMonth + "건</td>" +
+      "<td style='color:" + slaColor + ";font-weight:600'>-</td>" +
+      "<td>" + lastDate + "</td>" +
+      "<td style='display:flex;gap:4px'>" +
+        "<button class='btn btn-g btn-xs' data-bank='" + b.id + "' data-action='detail'>상세</button>" +
+        "<button class='btn btn-g btn-xs' data-bank='" + b.id + "' data-action='edit'>편집</button>" +
+      "</td></tr>";
+  }).join("") || "<tr><td colspan='8' style='text-align:center;color:#A8B4CE;padding:20px'>등록된 저축은행이 없습니다<br><small style='font-size:10px'>+ 은행 추가 버튼으로 등록하세요</small></td></tr>";
+}
+
 function gotoPage(pid) {
   document.querySelectorAll(".pg").forEach(p => p.classList.remove("on"));
   document.querySelectorAll(".sb-it").forEach(i => i.classList.remove("on"));
@@ -1470,6 +1427,7 @@ function gotoPage(pid) {
   if (pid === "users")         { renderStaff(); syncTeamSelects(); }
   if (pid === "bank-accounts") renderBankAccounts();
   if (pid === "team")          renderTeamFull();
+  if (pid === "banks")         renderBanks();
 }
 
 // ── 직원 목록
