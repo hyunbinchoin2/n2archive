@@ -560,16 +560,14 @@ textarea.fc2{resize:vertical;line-height:1.6}
       <!-- 내 신청 내역 (bank) -->
       <div id="pg-my" class="pg">
         <div class="ph"><h2>내 신청 내역</h2><p>내가 제출한 신청의 진행 상황을 확인합니다</p></div>
-        <div class="tbbar">
-          <div class="tb on">전체 (3)</div><div class="tb">대기 (1)</div>
-          <div class="tb">처리중 (1)</div><div class="tb">완료 (1)</div>
+        <div class="tbbar" id="my-tabbar">
+          <div class="tb on" data-filter="">전체</div>
+          <div class="tb" data-filter="대기">대기</div>
+          <div class="tb" data-filter="처리중">처리중</div>
+          <div class="tb" data-filter="완료">완료</div>
         </div>
-        <div class="card"><table><thead><tr><th>번호</th><th>제목</th><th>긴급도</th><th>상태</th><th>신청일</th><th>기한</th><th>담당자</th></tr></thead>
-        <tbody>
-          <tr data-tid="T-024"><td style="font-size:9px">T-2025-024</td><td>여신심사 화면 NullPointer 오류</td><td><span class="bx b-cri">긴급</span></td><td><span class="bx b-new">대기</span></td><td>2025.07.14</td><td style="color:var(--a);font-weight:600">2025.07.15</td><td style="color:#7B8BAF">배정 대기</td></tr>
-          <tr data-tid="T-023"><td style="font-size:9px">T-2025-023</td><td>리포트 출력 기능 개선</td><td><span class="bx b-hig">높음</span></td><td><span class="bx b-pro">처리중</span></td><td>2025.07.13</td><td>2025.07.20</td><td>이지은 담당</td></tr>
-          <tr data-tid="T-020"><td style="font-size:9px">T-2025-020</td><td>이자 계산 로직 수정</td><td><span class="bx b-hig">높음</span></td><td><span class="bx b-don">완료</span></td><td>2025.07.08</td><td>2025.07.12</td><td>김민수 담당</td></tr>
-        </tbody></table></div>
+        <div class="card"><table><thead><tr><th>번호</th><th>제목</th><th>영역</th><th>긴급도</th><th>상태</th><th>신청일</th><th>기한</th><th>담당자</th></tr></thead>
+        <tbody id="my-tbody"></tbody></table></div>
       </div>
 
       <!-- 저축은행 관리 -->
@@ -704,7 +702,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
 <div class="ov" id="ov">
   <div class="modal modal-lg">
     <div class="mhd">
-      <div><div class="m-tid" id="m-id">T-2025-024</div><h3 id="m-title">여신심사 화면 NullPointer 오류</h3></div>
+      <div><div class="m-tid" id="m-id"></div><h3 id="m-title"></h3></div>
       <button class="mc" id="mc-btn">✕</button>
     </div>
     <div class="mb">
@@ -761,7 +759,8 @@ textarea.fc2{resize:vertical;line-height:1.6}
     <div class="mb">
       <div class="fgrid">
         <div class="fg2"><label>이름<span class="req">*</span></label><input type="text" class="fc2" id="cs-name" placeholder="홍길동"></div>
-        <div class="fg2"><label>아이디 / 이메일<span class="req">*</span></label><input type="email" class="fc2" id="cs-email" placeholder="example@n2soft.com" oninput="this.value=this.value.toLowerCase()"></div>
+        <div class="fg2"><label>아이디<span class="req">*</span></label><input type="text" class="fc2" id="cs-id" placeholder="예: hong123" autocomplete="off"></div>
+        <div class="fg2"><label>이메일 <span style="font-size:10px;color:#7B8BAF">(선택 — 미입력 시 아이디@n2soft.co.kr)</span></label><input type="text" class="fc2" id="cs-email" placeholder="직접 입력 시에만 작성"></div>
         <div class="fg2"><label>비밀번호<span class="req">*</span></label><input type="password" class="fc2" id="cs-pw" placeholder="6자 이상"></div>
         <div class="fg2"><label>비밀번호 확인<span class="req">*</span></label><input type="password" class="fc2" id="cs-pw2" placeholder="비밀번호 재입력"></div>
         <div class="fg2"><label>역할<span class="req">*</span></label>
@@ -1186,16 +1185,31 @@ document.querySelectorAll(".rcard").forEach(card => {
 });
 
 // ── 로그인
-document.getElementById("btn-login").addEventListener("click", async () => {
-  const email = document.getElementById("li-id").value.trim().toLowerCase();
-  const pw    = document.getElementById("li-pw").value;
-  if (!email || !pw) { showErr("아이디와 비밀번호를 입력하세요."); return; }
+// ── 엔터키로 로그인
+["li-id", "li-pw", "sel-bk"].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") document.getElementById("btn-login").click();
+  });
+});
 
-  // 이메일 형식 검증
+document.getElementById("btn-login").addEventListener("click", async () => {
+  const input = document.getElementById("li-id").value.trim();
+  const pw    = document.getElementById("li-pw").value;
+  if (!input || !pw) { showErr("아이디와 비밀번호를 입력하세요."); return; }
+
+  // 이메일 형식 판별: @ 없으면 자동 변환
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    showErr("아이디는 이메일 형식이어야 합니다. (예: name@company.com)");
-    return;
+  const selCard = document.querySelector(".rcard.sel");
+  const loginType = selCard ? selCard.getAttribute("data-role") : "n2soft";
+  let email;
+  if (emailRegex.test(input)) {
+    // 이메일 형식이면 그대로 사용
+    email = input.toLowerCase();
+  } else {
+    // 아이디만 입력 시 역할에 따라 도메인 자동 부여
+    const domain = loginType === "bank" ? "@bank.portal" : "@n2soft.portal";
+    email = input.toLowerCase() + domain;
   }
 
   const btn = document.getElementById("btn-login");
@@ -1206,8 +1220,6 @@ document.getElementById("btn-login").addEventListener("click", async () => {
     btn.textContent = "로그인 →"; btn.disabled = false;
     const msg = (e.code === "auth/wrong-password" || e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
       ? "아이디 또는 비밀번호가 올바르지 않습니다."
-      : e.code === "auth/invalid-email"
-      ? "이메일 형식이 올바르지 않습니다."
       : e.code === "auth/too-many-requests"
       ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요."
       : "로그인 오류: " + e.message;
@@ -1313,6 +1325,7 @@ function setupRealtime() {
     renderTable();
     renderDashRecent();
     setupDashboard();
+    if (CU && CU.role === "bank") renderMyTickets();
     const pending = (window._tickets || []).filter(t => t.status === "대기").length;
     const bdg = document.getElementById("sb-bdg");
     if (bdg) { bdg.textContent = pending; bdg.style.display = pending > 0 ? "" : "none"; }
@@ -1343,6 +1356,53 @@ function renderDashRecent() {
     "<td><span class='bx " + (SB[t.status] || "b-nor") + "'>" + (t.status || "-") + "</span></td></tr>"
   ).join("") || "<tr><td colspan='5' style='text-align:center;color:#A8B4CE;padding:16px'>신청 내역이 없습니다</td></tr>";
 }
+
+// ── 내 신청 내역 (저축은행 직원용)
+let myTicketFilter = "";
+function renderMyTickets() {
+  const tickets = window._tickets || [];
+  const myTix = tickets.filter(t => t.requesterId === CU.uid);
+
+  // 탭 카운트 업데이트
+  const tabbar = document.getElementById("my-tabbar");
+  if (tabbar) {
+    const counts = { "": myTix.length, "대기": 0, "처리중": 0, "완료": 0 };
+    myTix.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; });
+    tabbar.querySelectorAll(".tb").forEach(tab => {
+      const f = tab.getAttribute("data-filter");
+      tab.textContent = (f === "" ? "전체" : f) + " (" + (counts[f] || 0) + ")";
+    });
+  }
+
+  // 필터 적용
+  const filtered = myTicketFilter ? myTix.filter(t => t.status === myTicketFilter) : myTix;
+  const tbody = document.getElementById("my-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = filtered.map(t => {
+    const due = t.dueDate && t.dueDate.toDate ? t.dueDate.toDate().toLocaleDateString("ko-KR") : (t.dueDate || "-");
+    const crt = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString("ko-KR") : "-";
+    const isOverdue = t.status !== "완료" && t.dueDate && (t.dueDate.toDate ? t.dueDate.toDate() : new Date(t.dueDate)) < new Date();
+    const area = t.area ? "<span class='bx' style='background:rgba(24,169,116,.08);color:var(--ok)'>" + (AREA_NAMES[t.area] || t.area) + "</span>" : "-";
+    return "<tr data-tid='" + t.id + "'>" +
+      "<td style='font-size:9px;color:#7B8BAF'>" + (t.ticketNo || t.id.slice(0,8)) + "</td>" +
+      "<td>" + t.title + "</td>" +
+      "<td>" + area + "</td>" +
+      "<td><span class='bx " + (PB[t.priority] || "b-nor") + "'>" + (t.priority || "-") + "</span></td>" +
+      "<td><span class='bx " + (SB[t.status] || "b-nor") + "'>" + (t.status || "-") + "</span></td>" +
+      "<td>" + crt + "</td>" +
+      "<td style='" + (isOverdue ? "color:var(--a);font-weight:600" : "") + "'>" + due + "</td>" +
+      "<td>" + (t.assigneeName ? t.assigneeName : "<span style='color:#7B8BAF'>배정 대기</span>") + "</td></tr>";
+  }).join("") || "<tr><td colspan='8' style='text-align:center;color:#A8B4CE;padding:20px'>신청 내역이 없습니다</td></tr>";
+}
+
+document.getElementById("my-tabbar").addEventListener("click", function(e) {
+  const tab = e.target.closest(".tb");
+  if (!tab) return;
+  document.querySelectorAll("#my-tabbar .tb").forEach(t => t.classList.remove("on"));
+  tab.classList.add("on");
+  myTicketFilter = tab.getAttribute("data-filter");
+  renderMyTickets();
+});
 
 // ── 신청 목록 렌더링
 function renderTable() {
@@ -1843,6 +1903,7 @@ function gotoPage(pid) {
   closeSidebar();
 
   if (pid === "list")          renderTable();
+  if (pid === "my")            renderMyTickets();
   if (pid === "users")         { renderStaff(); syncTeamSelects(); }
   if (pid === "bank-accounts") renderBankAccounts();
   if (pid === "team")          renderTeamFull();
@@ -2039,7 +2100,7 @@ document.getElementById("btn-save-staff").addEventListener("click", async () => 
   if (pw.length < 6) { alert("비밀번호는 6자 이상이어야 합니다."); return; }
 
   // 이메일 자동 생성: 직접 입력했으면 그대로, 없으면 아이디@n2soft.co.kr
-  const email = emailInput || (idInput + "@n2soft.co.kr");
+  const email = emailInput ? emailInput : (idInput.toLowerCase() + "@n2soft.portal");
 
   const btn = document.getElementById("btn-save-staff");
   btn.textContent = "생성 중..."; btn.disabled = true;
@@ -2099,7 +2160,7 @@ document.getElementById("btn-save-bank-user").addEventListener("click", async ()
   if (pw.length < 6) { alert("비밀번호는 6자 이상이어야 합니다."); return; }
 
   // @ 없으면 자동으로 도메인 추가
-  const email = idInput.includes("@") ? idInput : (idInput + "@bank.n2archive.com");
+  const email = idInput.includes("@") ? idInput : (idInput + "@bank.portal");
   const loginId = idInput.includes("@") ? idInput.split("@")[0] : idInput;
 
   const btn = document.getElementById("btn-save-bank-user");
