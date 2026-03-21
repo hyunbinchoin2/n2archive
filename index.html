@@ -1103,11 +1103,11 @@ function setupRealtime() {
   const r = CU.role;
   let q;
   if (r === "bank") {
-    q = query(collection(db, "tickets"), where("bankId", "==", CU.bankId || CU.uid), orderBy("createdAt", "desc"));
+    q = query(collection(db, "tickets"), where("bankId", "==", CU.bankId || CU.uid));
   } else if (r === "staff") {
-    q = query(collection(db, "tickets"), where("assigneeId", "==", CU.uid), orderBy("createdAt", "desc"));
+    q = query(collection(db, "tickets"), where("assigneeId", "==", CU.uid));
   } else {
-    q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
+    q = query(collection(db, "tickets"));
   }
   unsubTickets = onSnapshot(q, snap => {
     window._tickets = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1351,7 +1351,7 @@ document.getElementById("btn-addcmt").addEventListener("click", async () => {
 });
 
 async function loadComments(ticketId) {
-  const snap = await getDocs(query(collection(db, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")));
+  const snap = await getDocs(query(collection(db, "tickets", ticketId, "comments")));
   const tlEl = document.getElementById("m-timeline");
   const icons = { status_change: "🔄", assign: "👤", comment: "💬" };
   tlEl.innerHTML = snap.docs.map(d => {
