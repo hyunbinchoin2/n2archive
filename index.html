@@ -893,61 +893,91 @@ textarea.fc2{resize:vertical;line-height:1.6}
 </div>
 
 <script type="module">
-// ═══════════════════════════════════════════════════════
-//  ⚙️  FIREBASE 설정 — 아래 값을 본인 프로젝트 값으로 교체
-// ═══════════════════════════════════════════════════════
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc,
-  deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp, setDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyBt1aUPZvprlhnkIZ7J_EbcyIrnlAvSW74",
-  authDomain:        "n2archive.firebaseapp.com",
-  databaseURL:       "https://n2archive-default-rtdb.firebaseio.com",
-  projectId:         "n2archive",
-  storageBucket:     "n2archive.firebasestorage.app",
+  apiKey: "AIzaSyBt1aUPZvprlhnkIZ7J_EbcyIrnlAvSW74",
+  authDomain: "n2archive.firebaseapp.com",
+  databaseURL: "https://n2archive-default-rtdb.firebaseio.com",
+  projectId: "n2archive",
+  storageBucket: "n2archive.firebasestorage.app",
   messagingSenderId: "101432141512",
-  appId:             "1:101432141512:web:4feb4e6e2f4ad3172267fd"
+  appId: "1:101432141512:web:4feb4e6e2f4ad3172267fd"
 };
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
+// ── 전역 상태
+let CU = null;
+let curBk = "all";
+let TEAMS = [];
+let BANKS = [];
+let unsubTickets = null;
 
-// ═══════════════════════════════════════════════════════
-//  전역 상태
-// ═══════════════════════════════════════════════════════
-let CU = null;         // 현재 로그인 사용자 정보
-let curBk = 'all';     // 조회 범위 필터
-let TEAMS = [];        // 팀 목록
-let BANKS = [];        // 저축은행 목록
-let unsubTickets = null; // 실시간 리스너 해제 함수
+const PB = { "긴급": "b-cri", "높음": "b-hig", "보통": "b-nor" };
+const SB = { "대기": "b-new", "처리중": "b-pro", "완료": "b-don", "보류": "b-hld" };
+const AREA_NAMES = { credit: "심사", debt: "채권", platform: "플랫폼", report: "리포트", batch: "배치", if: "인터페이스" };
+const CAT_NAMES  = { bug: "버그/오류", improve: "기능개선", new: "신규기능", perf: "성능개선", data: "데이터처리", etc: "기타" };
+const ROLE_LABEL = { admin: "🛡 관리자", leader: "👑 팀장", staff: "🔧 직원", bank: "🏦 은행 직원" };
+const ROLE_CLASS = { admin: "rp-adm", leader: "rp-tl", staff: "rp-stf", bank: "rp-bnk" };
 
-const PB = {긴급:'b-cri', 높음:'b-hig', 보통:'b-nor'};
-const SB = {대기:'b-new', 처리중:'b-pro', 완료:'b-don', 보류:'b-hld'};
-const AREA_NAMES = {credit:'심사', debt:'채권', platform:'플랫폼', report:'리포트', batch:'배치', if:'인터페이스'};
-const CAT_NAMES  = {bug:'버그/오류', improve:'기능개선', new:'신규기능', perf:'성능개선', data:'데이터처리', etc:'기타'};
-const ROLE_LABEL = {admin:'🛡 관리자', leader:'👑 팀장', staff:'🔧 직원', bank:'🏦 은행 직원'};
-const ROLE_CLASS = {admin:'rp-adm', leader:'rp-tl', staff:'rp-stf', bank:'rp-bnk'};
+const CAT_FIELDS = {
+  bug: { title: "버그/오류 수정", fields: [
+    { label: "발생 일시", type: "text", placeholder: "예: 2025-07-14 09:30" },
+    { label: "발생 화면 경로", type: "text", placeholder: "예: 여신심사 > 신규심사 > 담보물 등록" },
+    { label: "오류 메시지", type: "textarea", placeholder: "화면에 표시된 오류 메시지" },
+    { label: "재현 방법", type: "textarea", placeholder: "단계별 재현 절차" },
+    { label: "재현율", type: "text", placeholder: "예: 100% / 간헐적" },
+    { label: "영향 범위", type: "text", placeholder: "예: 담보물 등록 기능 전체 중단" }
+  ]},
+  improve: { title: "기능 개선", fields: [
+    { label: "개선 대상 화면", type: "text", placeholder: "예: 여신심사 > 담보물 조회" },
+    { label: "현재 동작 방식", type: "textarea", placeholder: "현재 어떻게 동작하는지" },
+    { label: "개선 요청 사항", type: "textarea", placeholder: "어떻게 바뀌길 원하는지" },
+    { label: "개선 기대 효과", type: "text", placeholder: "예: 업무 처리 시간 단축" }
+  ]},
+  new: { title: "신규 기능 요청", fields: [
+    { label: "요청 기능명", type: "text", placeholder: "예: 여신 한도 일괄 조회" },
+    { label: "기능 설명", type: "textarea", placeholder: "기능의 목적과 내용" },
+    { label: "필요 이유", type: "textarea", placeholder: "해당 기능이 필요한 이유" },
+    { label: "참고 자료", type: "text", placeholder: "참고할 화면명 또는 내용" }
+  ]},
+  perf: { title: "성능 개선", fields: [
+    { label: "대상 화면/기능", type: "text", placeholder: "예: 여신심사 > 리포트 출력" },
+    { label: "현재 속도", type: "text", placeholder: "예: 조회 시 약 30초 소요" },
+    { label: "발생 시간대", type: "text", placeholder: "예: 월말 마감 시간" },
+    { label: "영향 건수", type: "text", placeholder: "예: 일 평균 200건" },
+    { label: "상세 내용", type: "textarea", placeholder: "성능 문제 상황 상세 설명" }
+  ]},
+  data: { title: "데이터 처리", fields: [
+    { label: "요청 유형", type: "select", options: ["데이터 조회", "데이터 수정", "데이터 삭제", "데이터 이관", "배치 처리"] },
+    { label: "대상 테이블/항목", type: "text", placeholder: "예: 여신 한도 테이블" },
+    { label: "처리 대상 건수", type: "text", placeholder: "예: 약 1,200건" },
+    { label: "요청 사유", type: "textarea", placeholder: "데이터 처리가 필요한 이유" },
+    { label: "처리 기준", type: "textarea", placeholder: "처리 조건/기준 설명" }
+  ]},
+  etc: { title: "기타", fields: [
+    { label: "요청 유형", type: "text", placeholder: "예: 문서 요청, 교육 요청 등" },
+    { label: "요청 내용", type: "textarea", placeholder: "요청 사항 상세 입력" },
+    { label: "참고 사항", type: "text", placeholder: "추가 참고 사항" }
+  ]}
+};
 
-// ═══════════════════════════════════════════════════════
-//  인증 상태 감지 — 자동 로그인/로그아웃
-// ═══════════════════════════════════════════════════════
-onAuthStateChanged(auth, async (firebaseUser) => {
-  if (firebaseUser) {
-    // Firestore에서 사용자 정보 가져오기
-    const userSnap = await getDoc(doc(db, 'users', firebaseUser.uid));
-    if (!userSnap.exists()) {
-      alert('사용자 정보를 찾을 수 없습니다. 관리자에게 문의하세요.');
-      await signOut(auth); return;
+// ── 인증 상태 감지
+onAuthStateChanged(auth, async (fbUser) => {
+  if (fbUser) {
+    const snap = await getDoc(doc(db, "users", fbUser.uid));
+    if (!snap.exists()) {
+      showErr("사용자 정보가 없습니다. 관리자에게 문의하세요.");
+      await signOut(auth);
+      return;
     }
-    CU = { uid: firebaseUser.uid, email: firebaseUser.email, ...userSnap.data() };
-    await loadMasterData();
+    CU = { uid: fbUser.uid, email: fbUser.email, ...snap.data() };
+    await loadMaster();
     initApp();
   } else {
     CU = null;
@@ -955,27 +985,77 @@ onAuthStateChanged(auth, async (firebaseUser) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════
-//  마스터 데이터 로드 (팀, 은행)
-// ═══════════════════════════════════════════════════════
-async function loadMasterData() {
-  const [teamsSnap, banksSnap] = await Promise.all([
-    getDocs(collection(db, 'teams')),
-    getDocs(collection(db, 'banks'))
+function showLogin() {
+  document.getElementById("login").style.display = "flex";
+  document.getElementById("app").style.display = "none";
+  if (unsubTickets) { unsubTickets(); unsubTickets = null; }
+}
+
+// ── 역할 카드
+document.querySelectorAll(".rcard").forEach(card => {
+  card.addEventListener("click", () => {
+    document.querySelectorAll(".rcard").forEach(c => {
+      c.classList.remove("sel");
+      c.querySelector(".rc-chk").textContent = "";
+    });
+    card.classList.add("sel");
+    card.querySelector(".rc-chk").textContent = "✓";
+    document.getElementById("bk-wrap").style.display =
+      card.getAttribute("data-role") === "bank" ? "block" : "none";
+  });
+});
+
+// ── 로그인
+document.getElementById("btn-login").addEventListener("click", async () => {
+  const email = document.getElementById("li-id").value.trim();
+  const pw    = document.getElementById("li-pw").value;
+  if (!email || !pw) { showErr("이메일과 비밀번호를 입력하세요."); return; }
+  const btn = document.getElementById("btn-login");
+  btn.textContent = "로그인 중..."; btn.disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch (e) {
+    btn.textContent = "로그인 →"; btn.disabled = false;
+    const msg = (e.code === "auth/wrong-password" || e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
+      ? "이메일 또는 비밀번호가 올바르지 않습니다."
+      : "로그인 오류: " + e.message;
+    showErr(msg);
+  }
+});
+
+function showErr(msg) {
+  let el = document.getElementById("login-error");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "login-error";
+    el.style.cssText = "background:rgba(214,64,69,.08);border:1px solid rgba(214,64,69,.3);border-radius:5px;padding:8px 12px;font-size:12px;color:#D64045;margin-bottom:10px";
+    document.getElementById("btn-login").insertAdjacentElement("beforebegin", el);
+  }
+  el.textContent = msg;
+}
+
+// ── 로그아웃
+document.getElementById("btn-out").addEventListener("click", () => signOut(auth));
+
+// ── 마스터 데이터 로드
+async function loadMaster() {
+  const [ts, bs] = await Promise.all([
+    getDocs(collection(db, "teams")),
+    getDocs(collection(db, "banks"))
   ]);
-  TEAMS = teamsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  BANKS = banksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  // 은행 필터 select 채우기
-  ['bk-filter', 'f-bk', 'nf-bk-sel', 'cbu-bank', 'ba-filter-bank', 'sel-bk'].forEach(sid => {
+  TEAMS = ts.docs.map(d => ({ id: d.id, ...d.data() }));
+  BANKS = bs.docs.map(d => ({ id: d.id, ...d.data() }));
+  ["bk-filter", "f-bk", "nf-bk-sel", "cbu-bank", "ba-filter-bank", "sel-bk"].forEach(sid => {
     const el = document.getElementById(sid);
     if (!el) return;
-    const isFilter = ['bk-filter','f-bk','ba-filter-bank'].includes(sid);
+    const isFilter = ["bk-filter", "f-bk", "ba-filter-bank"].includes(sid);
+    const isSelbk  = sid === "sel-bk";
     const cur = el.value;
-    if (isFilter) el.innerHTML = '<option value="">전체 저축은행</option>';
-    else if (sid === 'sel-bk') el.innerHTML = '<option value="">-- 선택 --</option>';
-    else el.innerHTML = '';
+    if (isFilter) el.innerHTML = "<option value=''>전체 저축은행</option>";
+    else if (isSelbk) el.innerHTML = "<option value=''>-- 선택 --</option>";
+    else el.innerHTML = "";
     BANKS.forEach(b => {
-      const opt = document.createElement('option');
+      const opt = document.createElement("option");
       opt.value = b.id; opt.textContent = b.name;
       if (b.id === cur) opt.selected = true;
       el.appendChild(opt);
@@ -984,909 +1064,637 @@ async function loadMasterData() {
   syncTeamSelects();
 }
 
-// ═══════════════════════════════════════════════════════
-//  로그인 페이지
-// ═══════════════════════════════════════════════════════
-function showLogin() {
-  document.getElementById('login').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  if (unsubTickets) { unsubTickets(); unsubTickets = null; }
-}
-
-// 역할 카드 클릭
-document.querySelectorAll('.rcard').forEach(card => {
-  card.addEventListener('click', () => {
-    document.querySelectorAll('.rcard').forEach(c => {
-      c.classList.remove('sel'); c.querySelector('.rc-chk').textContent = '';
-    });
-    card.classList.add('sel'); card.querySelector('.rc-chk').textContent = '✓';
-    document.getElementById('bk-wrap').style.display =
-      card.getAttribute('data-role') === 'bank' ? 'block' : 'none';
-  });
-});
-
-// 로그인 버튼
-document.getElementById('btn-login').addEventListener('click', async () => {
-  const email = document.getElementById('li-id').value.trim();
-  const pw    = document.getElementById('li-pw').value;
-  if (!email || !pw) { showError('이메일과 비밀번호를 입력하세요.'); return; }
-  setLoading(true);
-  try {
-    await signInWithEmailAndPassword(auth, email, pw);
-    // onAuthStateChanged 가 자동으로 처리
-  } catch (e) {
-    setLoading(false);
-    const msg = e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
-      ? '이메일 또는 비밀번호가 올바르지 않습니다.'
-      : '로그인 중 오류가 발생했습니다: ' + e.message;
-    showError(msg);
-  }
-});
-
-// 로그아웃
-document.getElementById('btn-out').addEventListener('click', async () => {
-  await signOut(auth);
-});
-
-function setLoading(on) {
-  const btn = document.getElementById('btn-login');
-  btn.textContent = on ? '로그인 중...' : '로그인 →';
-  btn.disabled = on;
-}
-function showError(msg) {
-  let el = document.getElementById('login-error');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'login-error';
-    el.style.cssText = 'background:rgba(214,64,69,.08);border:1px solid rgba(214,64,69,.3);border-radius:5px;padding:8px 12px;font-size:12px;color:#D64045;margin-bottom:10px';
-    document.getElementById('btn-login').insertAdjacentElement('beforebegin', el);
-  }
-  el.textContent = msg;
-}
-
-// ═══════════════════════════════════════════════════════
-//  앱 초기화
-// ═══════════════════════════════════════════════════════
+// ── 앱 초기화
 function initApp() {
-  document.getElementById('login').style.display = 'none';
-  const appEl = document.getElementById('app');
-  appEl.style.display = 'flex'; appEl.style.flexDirection = 'column';
+  document.getElementById("login").style.display = "none";
+  const appEl = document.getElementById("app");
+  appEl.style.display = "flex"; appEl.style.flexDirection = "column";
 
   const r = CU.role;
-  document.getElementById('hnm').textContent = CU.name;
-  document.getElementById('hav').textContent = CU.name[0];
-  const rlLabel = {admin:'N2SOFT 관리자', leader:'N2SOFT 팀장', staff:'N2SOFT 유지보수 직원', bank:(CU.bankName||'') + ' 직원'};
-  document.getElementById('hrl').textContent = rlLabel[r] || r;
-  const dc = {admin:'var(--a)', leader:'var(--warn)', staff:'var(--sky)', bank:'var(--ok)'};
-  document.getElementById('hdot').style.background = dc[r] || 'var(--p)';
-  document.getElementById('hctx').textContent = r === 'bank' ? (CU.bankName||'은행') : rlLabel[r];
+  document.getElementById("hnm").textContent = CU.name;
+  document.getElementById("hav").textContent = CU.name[0];
+  const rlMap = { admin: "N2SOFT 관리자", leader: "N2SOFT 팀장", staff: "N2SOFT 직원", bank: (CU.bankName || "") + " 직원" };
+  document.getElementById("hrl").textContent = rlMap[r] || r;
+  const dcMap = { admin: "var(--a)", leader: "var(--warn)", staff: "var(--sky)", bank: "var(--ok)" };
+  document.getElementById("hdot").style.background = dcMap[r] || "var(--p)";
+  document.getElementById("hctx").textContent = r === "bank" ? (CU.bankName || "은행") : rlMap[r];
 
-  // 사이드바 메뉴 제어
-  document.getElementById('sb-bk').style.display    = (r === 'admin' || r === 'leader') ? 'block' : 'none';
-  document.getElementById('sb-adm').style.display   = r === 'admin' ? 'block' : 'none';
-  document.getElementById('nb-new').style.display   = r === 'bank' ? 'flex' : 'none';
-  document.getElementById('nb-my').style.display    = r === 'bank' ? 'flex' : 'none';
-  document.getElementById('nb-assigned').style.display = r === 'staff' ? 'flex' : 'none';
-  document.getElementById('nb-team').style.display  = r === 'leader' ? 'flex' : 'none';
-  document.getElementById('db-btn').style.display   = r === 'bank' ? 'inline-flex' : 'none';
-  document.getElementById('lt-btn').style.display   = r === 'bank' ? 'inline-flex' : 'none';
-  document.getElementById('f-bk').style.display     = (r === 'admin' || r === 'leader') ? 'block' : 'none';
-  document.getElementById('nf-bk-wrap').style.display = r === 'bank' ? 'none' : 'block';
+  document.getElementById("sb-bk").style.display       = (r === "admin" || r === "leader") ? "block" : "none";
+  document.getElementById("sb-adm").style.display      = r === "admin" ? "block" : "none";
+  document.getElementById("nb-new").style.display      = r === "bank" ? "flex" : "none";
+  document.getElementById("nb-my").style.display       = r === "bank" ? "flex" : "none";
+  document.getElementById("nb-assigned").style.display = r === "staff" ? "flex" : "none";
+  document.getElementById("nb-team").style.display     = r === "leader" ? "flex" : "none";
+  document.getElementById("db-btn").style.display      = r === "bank" ? "inline-flex" : "none";
+  document.getElementById("lt-btn").style.display      = r === "bank" ? "inline-flex" : "none";
+  document.getElementById("f-bk").style.display        = (r === "admin" || r === "leader") ? "block" : "none";
+  document.getElementById("nf-bk-wrap").style.display  = r === "bank" ? "none" : "block";
 
-  // 계정 설정 기본값
-  const cfgName = document.getElementById('cfg-name');
+  const cfgName = document.getElementById("cfg-name");
   if (cfgName) cfgName.value = CU.name;
 
-  gotoPage('dash');
   setupRealtime();
+  gotoPage("dash");
 }
 
-// ═══════════════════════════════════════════════════════
-//  실시간 티켓 리스너 (Firestore onSnapshot)
-// ═══════════════════════════════════════════════════════
+// ── 실시간 리스너
 function setupRealtime() {
   if (unsubTickets) unsubTickets();
   const r = CU.role;
   let q;
-  if (r === 'bank') {
-    q = query(collection(db, 'tickets'),
-      where('bankId', '==', CU.bankId || CU.uid),
-      orderBy('createdAt', 'desc'));
-  } else if (r === 'staff') {
-    q = query(collection(db, 'tickets'),
-      where('assigneeId', '==', CU.uid),
-      orderBy('createdAt', 'desc'));
+  if (r === "bank") {
+    q = query(collection(db, "tickets"), where("bankId", "==", CU.bankId || CU.uid), orderBy("createdAt", "desc"));
+  } else if (r === "staff") {
+    q = query(collection(db, "tickets"), where("assigneeId", "==", CU.uid), orderBy("createdAt", "desc"));
   } else {
-    // admin, leader: 전체 (리더는 JS에서 추가 필터)
-    q = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
+    q = query(collection(db, "tickets"), orderBy("createdAt", "desc"));
   }
-  unsubTickets = onSnapshot(q, (snap) => {
-    const tickets = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    window._tickets = tickets;  // 전역 캐시
+  unsubTickets = onSnapshot(q, snap => {
+    window._tickets = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTable();
     renderDashRecent();
     setupDashboard();
-    updatePendingBadge(tickets);
-  }, (err) => {
-    console.error('Firestore 실시간 오류:', err);
-  });
+    const pending = (window._tickets || []).filter(t => t.status === "대기").length;
+    const bdg = document.getElementById("sb-bdg");
+    if (bdg) { bdg.textContent = pending; bdg.style.display = pending > 0 ? "" : "none"; }
+  }, err => console.error("onSnapshot error:", err));
 }
 
-function updatePendingBadge(tickets) {
-  const pending = tickets.filter(t => t.status === '대기').length;
-  const bdg = document.getElementById('sb-bdg');
-  if (bdg) { bdg.textContent = pending; bdg.style.display = pending > 0 ? '' : 'none'; }
-}
-
-// ═══════════════════════════════════════════════════════
-//  대시보드
-// ═══════════════════════════════════════════════════════
+// ── 대시보드 통계
 function setupDashboard() {
-  const tickets = window._tickets || [];
+  let d = window._tickets || [];
   const r = CU.role;
-  let d = tickets;
-  if (r === 'bank') d = tickets.filter(t => t.bankId === (CU.bankId || CU.uid));
-  else if (r === 'staff') d = tickets.filter(t => t.assigneeId === CU.uid);
-  if (curBk !== 'all' && (r === 'admin' || r === 'leader'))
-    d = d.filter(t => t.bankId === curBk);
-
-  document.getElementById('ds-total').textContent = d.length;
-  document.getElementById('ds-new').textContent   = d.filter(t => t.status === '대기').length;
-  document.getElementById('ds-prog').textContent  = d.filter(t => t.status === '처리중').length;
-  document.getElementById('ds-done').textContent  = d.filter(t => t.status === '완료').length;
+  if (r === "bank") d = d.filter(t => t.bankId === (CU.bankId || CU.uid));
+  if ((r === "admin" || r === "leader") && curBk !== "all") d = d.filter(t => t.bankId === curBk);
+  document.getElementById("ds-total").textContent = d.length;
+  document.getElementById("ds-new").textContent   = d.filter(t => t.status === "대기").length;
+  document.getElementById("ds-prog").textContent  = d.filter(t => t.status === "처리중").length;
+  document.getElementById("ds-done").textContent  = d.filter(t => t.status === "완료").length;
 }
 
 function renderDashRecent() {
-  const tickets = (window._tickets || []).slice(0, 5);
-  const tbody = document.getElementById('dash-tbody');
+  const tbody = document.getElementById("dash-tbody");
   if (!tbody) return;
-  tbody.innerHTML = tickets.map(t =>
-    `<tr data-tid="${t.id}">
-      <td style="font-size:9px;color:#7B8BAF">${t.ticketNo||t.id.slice(0,8)}</td>
-      <td>${t.title}</td>
-      <td><span class="bx b-bnk">${t.bankName||'-'}</span></td>
-      <td><span class="bx ${PB[t.priority]||'b-nor'}">${t.priority||'-'}</span></td>
-      <td><span class="bx ${SB[t.status]||'b-nor'}">${t.status||'-'}</span></td>
-    </tr>`
-  ).join('') || '<tr><td colspan="5" style="text-align:center;color:#A8B4CE;padding:16px">신청 내역이 없습니다</td></tr>';
+  const d = (window._tickets || []).slice(0, 5);
+  tbody.innerHTML = d.map(t =>
+    "<tr data-tid='" + t.id + "'><td style='font-size:9px;color:#7B8BAF'>" + (t.ticketNo || t.id.slice(0,8)) + "</td>" +
+    "<td>" + t.title + "</td>" +
+    "<td><span class='bx b-bnk'>" + (t.bankName || "-") + "</span></td>" +
+    "<td><span class='bx " + (PB[t.priority] || "b-nor") + "'>" + (t.priority || "-") + "</span></td>" +
+    "<td><span class='bx " + (SB[t.status] || "b-nor") + "'>" + (t.status || "-") + "</span></td></tr>"
+  ).join("") || "<tr><td colspan='5' style='text-align:center;color:#A8B4CE;padding:16px'>신청 내역이 없습니다</td></tr>";
 }
 
-// ═══════════════════════════════════════════════════════
-//  신청 목록 렌더링 (필터 적용)
-// ═══════════════════════════════════════════════════════
+// ── 신청 목록 렌더링
 function renderTable() {
-  const tickets = window._tickets || [];
-  const r = CU.role;
-  const srch = (document.getElementById('f-srch').value || '').toLowerCase();
-  const sta  = document.getElementById('f-sta').value;
-  const pri  = document.getElementById('f-pri').value;
-  const bk   = document.getElementById('f-bk').value;
+  const r    = CU ? CU.role : "admin";
+  const srch = (document.getElementById("f-srch").value || "").toLowerCase();
+  const sta  = document.getElementById("f-sta").value;
+  const pri  = document.getElementById("f-pri").value;
+  const bk   = document.getElementById("f-bk").value;
 
-  let d = tickets.filter(t => {
-    if (r === 'bank'  && t.bankId !== (CU.bankId || CU.uid)) return false;
-    if (r === 'staff' && t.assigneeId !== CU.uid) return false;
-    if ((r === 'admin' || r === 'leader') && curBk !== 'all' && t.bankId !== curBk) return false;
-    if (srch && !t.title?.toLowerCase().includes(srch) && !(t.ticketNo||'').toLowerCase().includes(srch)) return false;
+  let d = (window._tickets || []).filter(t => {
+    if (r === "bank"  && t.bankId !== (CU.bankId || CU.uid)) return false;
+    if (r === "staff" && t.assigneeId !== CU.uid) return false;
+    if ((r === "admin" || r === "leader") && curBk !== "all" && t.bankId !== curBk) return false;
+    if (srch && !(t.title || "").toLowerCase().includes(srch) && !(t.ticketNo || "").toLowerCase().includes(srch)) return false;
     if (sta && t.status !== sta) return false;
     if (pri && t.priority !== pri) return false;
     if (bk  && t.bankId  !== bk)  return false;
     return true;
   });
 
-  const cnt = document.getElementById('lt-cnt');
-  if (cnt) cnt.textContent = '총 ' + d.length + '건';
+  const cnt = document.getElementById("lt-cnt");
+  if (cnt) cnt.textContent = "총 " + d.length + "건";
 
-  const tbody = document.getElementById('lt-body');
+  const tbody = document.getElementById("lt-body");
   if (!tbody) return;
   tbody.innerHTML = d.map(t => {
-    const areaTag = t.area ? `<span class="bx" style="background:rgba(24,169,116,.08);color:var(--ok)">${AREA_NAMES[t.area]||t.area}</span>` : '-';
-    const due = t.dueDate?.toDate ? t.dueDate.toDate().toLocaleDateString('ko-KR') : (t.dueDate||'-');
-    const created = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('ko-KR') : '-';
-    return `<tr data-tid="${t.id}">
-      <td style="font-size:9px;color:#7B8BAF">${t.ticketNo||t.id.slice(0,8)}</td>
-      <td>${t.title}</td>
-      <td><span class="bx b-bnk">${t.bankName||'-'}</span></td>
-      <td>${areaTag}</td>
-      <td>${t.requesterName||'-'}</td>
-      <td><span class="bx ${PB[t.priority]||'b-nor'}">${t.priority||'-'}</span></td>
-      <td><span class="bx ${SB[t.status]||'b-nor'}">${t.status||'-'}</span></td>
-      <td>${created}</td>
-      <td>${due}</td>
-      <td>${t.assigneeName ? t.assigneeName : '<span style="color:#7B8BAF">미배정</span>'}</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="10" style="text-align:center;color:#A8B4CE;padding:20px">조건에 맞는 신청이 없습니다</td></tr>';
+    const area = t.area ? "<span class='bx' style='background:rgba(24,169,116,.08);color:var(--ok)'>" + (AREA_NAMES[t.area] || t.area) + "</span>" : "-";
+    const due  = t.dueDate && t.dueDate.toDate ? t.dueDate.toDate().toLocaleDateString("ko-KR") : (t.dueDate || "-");
+    const crt  = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString("ko-KR") : "-";
+    return "<tr data-tid='" + t.id + "'>" +
+      "<td style='font-size:9px;color:#7B8BAF'>" + (t.ticketNo || t.id.slice(0,8)) + "</td>" +
+      "<td>" + t.title + "</td>" +
+      "<td><span class='bx b-bnk'>" + (t.bankName || "-") + "</span></td>" +
+      "<td>" + area + "</td>" +
+      "<td>" + (t.requesterName || "-") + "</td>" +
+      "<td><span class='bx " + (PB[t.priority] || "b-nor") + "'>" + (t.priority || "-") + "</span></td>" +
+      "<td><span class='bx " + (SB[t.status]   || "b-nor") + "'>" + (t.status   || "-") + "</span></td>" +
+      "<td>" + crt + "</td><td>" + due + "</td>" +
+      "<td>" + (t.assigneeName ? t.assigneeName : "<span style='color:#7B8BAF'>미배정</span>") + "</td></tr>";
+  }).join("") || "<tr><td colspan='10' style='text-align:center;color:#A8B4CE;padding:20px'>조건에 맞는 신청이 없습니다</td></tr>";
 }
 
-// ═══════════════════════════════════════════════════════
-//  신청서 제출 → Firestore에 저장
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-submit').addEventListener('click', async () => {
-  const area  = document.getElementById('nf-area').value;
-  const cat   = document.getElementById('nf-cat').value;
-  const title = document.getElementById('nf-title').value.trim();
-  if (!area)  { alert('업무 영역을 선택해주세요.'); return; }
-  if (!cat)   { alert('카테고리를 선택해주세요.'); return; }
-  if (!title) { alert('제목을 입력해주세요.'); return; }
+// ── 신청서 제출
+document.getElementById("btn-submit").addEventListener("click", async () => {
+  const area  = document.getElementById("nf-area").value;
+  const cat   = document.getElementById("nf-cat").value;
+  const title = document.getElementById("nf-title").value.trim();
+  if (!area)  { alert("업무 영역을 선택해주세요."); return; }
+  if (!cat)   { alert("카테고리를 선택해주세요."); return; }
+  if (!title) { alert("제목을 입력해주세요."); return; }
 
-  // 카테고리 상세 내용 수집
   const contentRows = {};
-  document.querySelectorAll('#detail-table tr').forEach(row => {
-    const lbl = row.querySelector('td.lbl')?.textContent;
-    const inp = row.querySelector('td.val input, td.val textarea, td.val select');
+  document.querySelectorAll("#detail-table tr").forEach(row => {
+    const lbl = row.querySelector("td.lbl") ? row.querySelector("td.lbl").textContent : null;
+    const inp = row.querySelector("td.val input, td.val textarea, td.val select");
     if (lbl && inp) contentRows[lbl] = inp.value;
   });
 
-  // 우선순위 선택값
-  const selPP = document.querySelector('.pp.sc') ? '긴급'
-              : document.querySelector('.pp.sh') ? '높음' : '보통';
+  const selPP = document.querySelector(".pp.sc") ? "긴급"
+              : document.querySelector(".pp.sh") ? "높음" : "보통";
 
-  // 저축은행 정보
-  let bankId = '', bankName = '';
-  if (CU.role === 'bank') {
-    bankId = CU.bankId || CU.uid; bankName = CU.bankName || '';
+  let bankId = "", bankName = "";
+  if (CU.role === "bank") {
+    bankId = CU.bankId || CU.uid; bankName = CU.bankName || "";
   } else {
-    const bkSel = document.getElementById('nf-bk-sel');
-    bankId = bkSel.value; bankName = bkSel.options[bkSel.selectedIndex]?.text || '';
+    const bkSel = document.getElementById("nf-bk-sel");
+    bankId = bkSel.value;
+    bankName = bkSel.options[bkSel.selectedIndex] ? bkSel.options[bkSel.selectedIndex].text : "";
   }
 
-  // 티켓 번호 생성
   const now = new Date();
-  const ticketNo = 'T-' + now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0')
-    + '-' + String(now.getDate()).padStart(2,'0') + '-' + Date.now().toString().slice(-4);
-
-  const dueDateInput = document.querySelector('#pg-new input[type="date"]').value;
-
-  const ticket = {
-    ticketNo,
-    bankId, bankName,
-    requesterId: CU.uid, requesterName: CU.name,
-    assigneeId: '', assigneeName: '',
-    title, area, category: cat,
-    priority: selPP, status: '대기',
-    content: contentRows,
-    dueDate: dueDateInput || null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
+  const ticketNo = "T-" + now.getFullYear() + String(now.getMonth()+1).padStart(2,"0") + String(now.getDate()).padStart(2,"0") + "-" + Date.now().toString().slice(-4);
+  const dueDateInput = document.querySelector("#pg-new input[type='date']");
 
   try {
-    const docRef = await addDoc(collection(db, 'tickets'), ticket);
-    alert('유지보수 신청서가 제출되었습니다!
-신청번호: ' + ticketNo);
-    gotoPage('my');
-    // 폼 초기화
-    document.getElementById('nf-title').value = '';
-    document.getElementById('nf-area').value = '';
-    document.getElementById('nf-cat').value = '';
-    document.getElementById('detail-placeholder').style.display = 'block';
-    document.getElementById('detail-table').style.display = 'none';
-  } catch (e) {
-    alert('제출 중 오류가 발생했습니다: ' + e.message);
-  }
+    await addDoc(collection(db, "tickets"), {
+      ticketNo, bankId, bankName,
+      requesterId: CU.uid, requesterName: CU.name,
+      assigneeId: "", assigneeName: "",
+      title, area, category: cat,
+      priority: selPP, status: "대기",
+      content: contentRows,
+      dueDate: dueDateInput ? dueDateInput.value : null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    alert("신청서가 제출되었습니다! 신청번호: " + ticketNo);
+    document.getElementById("nf-title").value = "";
+    document.getElementById("nf-area").value  = "";
+    document.getElementById("nf-cat").value   = "";
+    document.getElementById("detail-placeholder").style.display = "block";
+    document.getElementById("detail-table").style.display = "none";
+    gotoPage("my");
+  } catch (e) { alert("제출 오류: " + e.message); }
 });
 
-
-// ═══════════════════════════════════════════════════════
-//  신청서 상세 모달 (Firestore에서 실시간 로드)
-// ═══════════════════════════════════════════════════════
+// ── 티켓 모달
 async function openModal(ticketId) {
   const cached = (window._tickets || []).find(t => t.id === ticketId);
-  const t = cached || (await getDoc(doc(db, 'tickets', ticketId))).data();
+  const t = cached || (await getDoc(doc(db, "tickets", ticketId))).data();
   if (!t) return;
 
-  document.getElementById('m-id').textContent    = t.ticketNo || ticketId.slice(0,8);
-  document.getElementById('m-title').textContent = t.title;
-  document.getElementById('m-bk').textContent    = t.bankName || '-';
-  document.getElementById('m-req').textContent   = t.requesterName || '-';
-  document.getElementById('m-asgn').textContent  = t.assigneeName || '배정 대기';
-  const due = t.dueDate?.toDate ? t.dueDate.toDate().toLocaleDateString('ko-KR') : (t.dueDate||'-');
-  const created = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleString('ko-KR') : '-';
-  document.getElementById('m-due').textContent   = due;
-  document.getElementById('m-dt').textContent    = created;
-  document.getElementById('m-cat').textContent   = CAT_NAMES[t.category] || t.category || '-';
-  const mArea = document.getElementById('m-area');
-  if (mArea) { mArea.textContent = AREA_NAMES[t.area] || t.area || '-'; }
+  document.getElementById("m-id").textContent    = t.ticketNo || ticketId.slice(0,8);
+  document.getElementById("m-title").textContent = t.title;
+  document.getElementById("m-bk").textContent    = t.bankName || "-";
+  document.getElementById("m-req").textContent   = t.requesterName || "-";
+  document.getElementById("m-asgn").textContent  = t.assigneeName || "배정 대기";
+  document.getElementById("m-due").textContent   = t.dueDate && t.dueDate.toDate ? t.dueDate.toDate().toLocaleDateString("ko-KR") : (t.dueDate || "-");
+  document.getElementById("m-dt").textContent    = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleString("ko-KR") : "-";
+  document.getElementById("m-cat").textContent   = CAT_NAMES[t.category] || t.category || "-";
+  const mArea = document.getElementById("m-area");
+  if (mArea) mArea.textContent = AREA_NAMES[t.area] || t.area || "-";
 
-  const mPri = document.getElementById('m-pri');
-  mPri.className = 'bx ' + (PB[t.priority]||'b-nor'); mPri.textContent = t.priority||'-';
-  const mSta = document.getElementById('m-sta');
-  mSta.className = 'bx ' + (SB[t.status]||'b-nor'); mSta.textContent = t.status||'-';
+  const mPri = document.getElementById("m-pri");
+  mPri.className = "bx " + (PB[t.priority] || "b-nor"); mPri.textContent = t.priority || "-";
+  const mSta = document.getElementById("m-sta");
+  mSta.className = "bx " + (SB[t.status] || "b-nor"); mSta.textContent = t.status || "-";
 
-  // 상세 내용
-  const ctEl = document.getElementById('m-content-table');
+  const ctEl = document.getElementById("m-content-table");
   if (t.content && Object.keys(t.content).length > 0) {
-    ctEl.innerHTML = '<table class="detail-table">'
-      + Object.entries(t.content).map(([k,v]) =>
-          `<tr><td class="lbl">${k}</td><td class="val" style="font-size:11px;line-height:1.6;padding:8px 10px">${v||'-'}</td></tr>`)
-        .join('')
-      + '</table>';
+    ctEl.innerHTML = "<table class='detail-table'>" +
+      Object.entries(t.content).map(function(e) {
+        return "<tr><td class='lbl'>" + e[0] + "</td><td class='val' style='font-size:11px;line-height:1.6;padding:8px 10px'>" + (e[1] || "-") + "</td></tr>";
+      }).join("") + "</table>";
   } else {
-    ctEl.innerHTML = '<p style="font-size:11px;color:#7B8BAF;padding:8px">내용 없음</p>';
+    ctEl.innerHTML = "<p style='font-size:11px;color:#7B8BAF;padding:8px'>내용 없음</p>";
   }
 
-  // 처리 영역 권한
   const r = CU.role;
-  const apLeader = document.getElementById('m-ap-leader');
-  const apStaff  = document.getElementById('m-ap-staff');
-  apLeader.style.display = (r==='admin'||r==='leader') ? 'block' : 'none';
-  apStaff.style.display  = (r==='staff'||r==='admin'||r==='leader') ? 'block' : 'none';
+  document.getElementById("m-ap-leader").style.display = (r === "admin" || r === "leader") ? "block" : "none";
+  document.getElementById("m-ap-staff").style.display  = (r === "staff" || r === "admin" || r === "leader") ? "block" : "none";
 
-  // 처리 버튼 이벤트
-  const stbtns = document.getElementById('stbtns');
-  stbtns.innerHTML = `
-    <button class="btn btn-sky btn-sm" data-st="처리중">🔄 처리 시작</button>
-    <button class="btn btn-ok btn-sm"  data-st="완료">✅ 처리 완료</button>
-    <button class="btn btn-g btn-sm"   data-st="보류">⏸ 보류</button>`;
-  stbtns.querySelectorAll('[data-st]').forEach(btn => {
-    btn.addEventListener('click', () => changeTicketStatus(ticketId, btn.getAttribute('data-st')));
+  const stbtns = document.getElementById("stbtns");
+  stbtns.innerHTML =
+    "<button class='btn btn-sky btn-sm' data-st='처리중'>🔄 처리 시작</button>" +
+    "<button class='btn btn-ok btn-sm'  data-st='완료'>✅ 처리 완료</button>" +
+    "<button class='btn btn-g btn-sm'   data-st='보류'>⏸ 보류</button>";
+  stbtns.querySelectorAll("[data-st]").forEach(btn => {
+    btn.addEventListener("click", () => changeStatus(ticketId, btn.getAttribute("data-st")));
   });
 
-  // 담당자 배정 select (팀원 목록으로)
-  const assignSel = document.getElementById('m-assign-sel');
+  const assignSel = document.getElementById("m-assign-sel");
   if (assignSel) {
-    const staffList = Object.values? [] : [];  // Firestore에서 로드
-    const staffSnap = await getDocs(query(collection(db,'users'), where('role','in',['staff','leader'])));
-    assignSel.innerHTML = '<option value="">-- 배정 --</option>'
-      + staffSnap.docs.map(d => {
-          const u = d.data();
-          return `<option value="${d.id}" data-name="${u.name}">${u.name} (${u.team||'-'})</option>`;
-        }).join('');
+    const staffSnap = await getDocs(query(collection(db, "users"), where("role", "in", ["staff", "leader"])));
+    assignSel.innerHTML = "<option value=''>-- 배정 --</option>" +
+      staffSnap.docs.map(d => {
+        const u = d.data();
+        return "<option value='" + d.id + "' data-name='" + u.name + "'>" + u.name + " (" + (u.team || "-") + ")</option>";
+      }).join("");
     assignSel.dataset.ticketId = ticketId;
   }
 
-  // 코멘트 이력 로드
+  document.getElementById("ov").dataset.ticketId = ticketId;
   loadComments(ticketId);
-
-
-  document.getElementById('ov').classList.add('on');
+  document.getElementById("ov").classList.add("on");
 }
 
-// ═══════════════════════════════════════════════════════
-//  티켓 상태 변경
-// ═══════════════════════════════════════════════════════
-async function changeTicketStatus(ticketId, newStatus) {
+async function changeStatus(ticketId, newStatus) {
   try {
-    await updateDoc(doc(db, 'tickets', ticketId), {
-      status: newStatus, updatedAt: serverTimestamp()
-    });
-    // 이력 추가
-    await addDoc(collection(db, 'tickets', ticketId, 'comments'), {
+    await updateDoc(doc(db, "tickets", ticketId), { status: newStatus, updatedAt: serverTimestamp() });
+    await addDoc(collection(db, "tickets", ticketId, "comments"), {
       authorId: CU.uid, authorName: CU.name,
-      content: `상태를 "${newStatus}"으로 변경했습니다.`,
-      type: 'status_change', createdAt: serverTimestamp()
+      content: "상태를 [" + newStatus + "]으로 변경했습니다.",
+      type: "status_change", createdAt: serverTimestamp()
     });
-    const el = document.getElementById('m-sta');
-    el.className = 'bx ' + (SB[newStatus]||'b-nor'); el.textContent = newStatus;
+    const el = document.getElementById("m-sta");
+    el.className = "bx " + (SB[newStatus] || "b-nor"); el.textContent = newStatus;
     loadComments(ticketId);
-    alert(`상태가 "${newStatus}"으로 변경되었습니다.`);
-  } catch (e) { alert('변경 실패: ' + e.message); }
+  } catch (e) { alert("변경 실패: " + e.message); }
 }
 
-// ═══════════════════════════════════════════════════════
-//  담당자 배정 (팀장 전용)
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-assign').addEventListener('click', async () => {
-  const sel = document.getElementById('m-assign-sel');
-  const assigneeId = sel.value;
-  const assigneeName = sel.options[sel.selectedIndex]?.getAttribute('data-name') || '';
-  const ticketId = sel.dataset.ticketId;
-  if (!assigneeId) { alert('담당자를 선택해주세요.'); return; }
+document.getElementById("btn-assign").addEventListener("click", async () => {
+  const sel = document.getElementById("m-assign-sel");
+  const assigneeId   = sel.value;
+  const assigneeName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].getAttribute("data-name") : "";
+  const ticketId     = sel.dataset.ticketId;
+  if (!assigneeId) { alert("담당자를 선택해주세요."); return; }
   try {
-    await updateDoc(doc(db, 'tickets', ticketId), {
-      assigneeId, assigneeName, status: '처리중', updatedAt: serverTimestamp()
-    });
-    await addDoc(collection(db, 'tickets', ticketId, 'comments'), {
+    await updateDoc(doc(db, "tickets", ticketId), { assigneeId, assigneeName, status: "처리중", updatedAt: serverTimestamp() });
+    await addDoc(collection(db, "tickets", ticketId, "comments"), {
       authorId: CU.uid, authorName: CU.name,
-      content: `"${assigneeName}" 님에게 배정되었습니다.`,
-      type: 'assign', createdAt: serverTimestamp()
+      content: "[" + assigneeName + "] 님에게 배정되었습니다.",
+      type: "assign", createdAt: serverTimestamp()
     });
-    document.getElementById('m-asgn').textContent = assigneeName;
+    document.getElementById("m-asgn").textContent = assigneeName;
     loadComments(ticketId);
-    alert('"' + assigneeName + '"에게 배정되었습니다.');
-  } catch (e) { alert('배정 실패: ' + e.message); }
+    alert(assigneeName + "에게 배정되었습니다.");
+  } catch (e) { alert("배정 실패: " + e.message); }
 });
 
-// ═══════════════════════════════════════════════════════
-//  코멘트 등록
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-addcmt').addEventListener('click', async () => {
-  const cmtEl = document.getElementById('m-comment');
-  const content = cmtEl.value.trim();
-  if (!content) { alert('코멘트 내용을 입력해주세요.'); return; }
-
-  // 현재 열린 모달의 ticketId 가져오기
-  const sel = document.getElementById('m-assign-sel');
-  const ticketId = sel?.dataset.ticketId
-    || document.getElementById('ov').dataset.ticketId;
+document.getElementById("btn-addcmt").addEventListener("click", async () => {
+  const cmtEl    = document.getElementById("m-comment");
+  const content  = cmtEl.value.trim();
+  const ticketId = document.getElementById("ov").dataset.ticketId;
+  if (!content)  { alert("코멘트 내용을 입력해주세요."); return; }
   if (!ticketId) return;
-
   try {
-    await addDoc(collection(db, 'tickets', ticketId, 'comments'), {
+    await addDoc(collection(db, "tickets", ticketId, "comments"), {
       authorId: CU.uid, authorName: CU.name,
-      content, type: 'comment', createdAt: serverTimestamp()
+      content, type: "comment", createdAt: serverTimestamp()
     });
-    cmtEl.value = '';
+    cmtEl.value = "";
     loadComments(ticketId);
-    alert('코멘트가 등록되었습니다.');
-  } catch (e) { alert('등록 실패: ' + e.message); }
+  } catch (e) { alert("등록 실패: " + e.message); }
 });
 
-// ═══════════════════════════════════════════════════════
-//  코멘트 이력 로드
-// ═══════════════════════════════════════════════════════
 async function loadComments(ticketId) {
-  // ticketId를 ov에 저장
-  document.getElementById('ov').dataset.ticketId = ticketId;
-  const m_assign = document.getElementById('m-assign-sel');
-  if (m_assign) m_assign.dataset.ticketId = ticketId;
-
-  const snap = await getDocs(
-    query(collection(db,'tickets',ticketId,'comments'), orderBy('createdAt','asc'))
-  );
-  const tlEl = document.getElementById('m-timeline');
-  const icons = {status_change:'🔄', assign:'👤', comment:'💬'};
+  const snap = await getDocs(query(collection(db, "tickets", ticketId, "comments"), orderBy("createdAt", "asc")));
+  const tlEl = document.getElementById("m-timeline");
+  const icons = { status_change: "🔄", assign: "👤", comment: "💬" };
   tlEl.innerHTML = snap.docs.map(d => {
-    const c = d.data();
-    const ts = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('ko-KR') : '-';
-    const ico = icons[c.type] || '💬';
-    return `<div class="tl-it">
-      <div class="tl-dot on">${ico}</div>
-      <div>
-        <div><span class="tw">${c.authorName}</span><span class="tt">${ts}</span></div>
-        <div class="tm">${c.content}</div>
-      </div>
-    </div>`;
-  }).join('') || '<div style="font-size:11px;color:#A8B4CE;padding:8px">처리 이력이 없습니다</div>';
+    const c  = d.data();
+    const ts = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate().toLocaleString("ko-KR") : "-";
+    const ic = icons[c.type] || "💬";
+    return "<div class='tl-it'><div class='tl-dot on'>" + ic + "</div>" +
+      "<div><div><span class='tw'>" + c.authorName + "</span><span class='tt'>" + ts + "</span></div>" +
+      "<div class='tm'>" + c.content + "</div></div></div>";
+  }).join("") || "<div style='font-size:11px;color:#A8B4CE;padding:8px'>처리 이력이 없습니다</div>";
 }
 
-
-// ═══════════════════════════════════════════════════════
-//  직원 계정 생성 (Firebase Auth + Firestore)
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-save-staff').addEventListener('click', async () => {
-  const name  = document.getElementById('cs-name').value.trim();
-  const email = document.getElementById('cs-email').value.trim();
-  const pw    = document.getElementById('cs-pw').value;
-  const pw2   = document.getElementById('cs-pw2').value;
-  const role  = document.getElementById('cs-role').value;
-  const team  = document.getElementById('cs-team').value;
-  if (!name || !email) { alert('이름과 이메일을 입력해주세요.'); return; }
-  if (pw !== pw2) { alert('비밀번호가 일치하지 않습니다.'); return; }
-  if (pw.length < 6) { alert('비밀번호는 6자 이상이어야 합니다.'); return; }
-
-  // ⚠️  클라이언트에서 직접 계정 생성 시 현재 사용자 세션이 바뀌는 문제가 있음
-  // 실제 운영에서는 Firebase Admin SDK (Cloud Functions) 사용 권장
-  // 여기서는 Firestore에만 등록하고 별도로 Auth 생성 안내
-  alert(
-    '⚠️ 보안 안내
-
-' +
-    '직원 계정 생성은 Firebase 콘솔에서 진행해주세요:
-' +
-    '1. Firebase 콘솔 → Authentication → 사용자 추가
-' +
-    '2. 이메일: ' + email + '
-' +
-    '3. 임시 비밀번호 설정
-' +
-    '4. 생성된 UID를 Firestore users 컬렉션에 등록
-
-' +
-    '(운영 환경에서는 Cloud Functions으로 자동화 가능합니다)'
-  );
-  document.getElementById('ov-create-staff').classList.remove('on');
+// ── 카테고리 변경
+document.getElementById("nf-cat").addEventListener("change", function() {
+  const cat = this.value;
+  const ph  = document.getElementById("detail-placeholder");
+  const tbl = document.getElementById("detail-table");
+  if (!cat) { ph.style.display = "block"; tbl.style.display = "none"; return; }
+  ph.style.display = "none"; tbl.style.display = "table";
+  const def = CAT_FIELDS[cat];
+  const titleEl = document.getElementById("nf-title");
+  if (!titleEl.value) titleEl.placeholder = "예: " + def.title + " 관련 문의";
+  tbl.innerHTML = def.fields.map(f => {
+    let input;
+    if (f.type === "select") {
+      input = "<select class='fc2' style='font-size:12px'><option value=''>-- 선택 --</option>" +
+        f.options.map(o => "<option>" + o + "</option>").join("") + "</select>";
+    } else if (f.type === "textarea") {
+      input = "<textarea class='fc2' style='min-height:55px;font-size:12px' placeholder='" + f.placeholder + "'></textarea>";
+    } else {
+      input = "<input type='text' class='fc2' style='font-size:12px' placeholder='" + f.placeholder + "'>";
+    }
+    return "<tr><td class='lbl'>" + f.label + "</td><td class='val'>" + input + "</td></tr>";
+  }).join("");
 });
 
-// ═══════════════════════════════════════════════════════
-//  저축은행 추가 → Firestore 저장
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-save-bank').addEventListener('click', async () => {
-  const name   = document.getElementById('new-bank-name').value.trim();
-  const ver    = document.getElementById('new-bank-ver').value || 'v4.2.1';
-  const status = document.getElementById('new-bank-status').value;
-  if (!name) { alert('은행명을 입력해주세요.'); return; }
-  try {
-    const docRef = await addDoc(collection(db, 'banks'), {
-      name, systemVersion: ver, contractStatus: status,
-      managerId: '', createdAt: serverTimestamp()
-    });
-    BANKS.push({ id: docRef.id, name, systemVersion: ver, contractStatus: status });
-    await loadMasterData();
-    document.getElementById('ov-bank').classList.remove('on');
-    alert('"' + name + '"이 추가되었습니다.');
-  } catch (e) { alert('저장 실패: ' + e.message); }
+// ── 긴급도 선택
+document.querySelectorAll(".pp[data-pv]").forEach(el => {
+  el.addEventListener("click", () => {
+    document.querySelectorAll(".pp").forEach(p => p.className = "pp");
+    const cls = { "보통": "sn", "높음": "sh", "긴급": "sc" };
+    el.className = "pp " + (cls[el.getAttribute("data-pv")] || "sn");
+  });
 });
 
-// ═══════════════════════════════════════════════════════
-//  팀 추가 → Firestore 저장
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-add-team').addEventListener('click', async () => {
-  const nm = document.getElementById('new-team-name').value.trim();
-  if (!nm) { alert('팀 이름을 입력해주세요.'); return; }
-  try {
-    await addDoc(collection(db, 'teams'), { name: nm, createdAt: serverTimestamp() });
-    TEAMS = [...TEAMS, { name: nm }];
-    document.getElementById('new-team-name').value = '';
-    syncTeamSelects();
-    alert('"' + nm + '" 팀이 추가되었습니다.');
-  } catch (e) { alert('저장 실패: ' + e.message); }
+// ── 모달 닫기
+function closeModal() { document.getElementById("ov").classList.remove("on"); }
+document.getElementById("mc-btn").addEventListener("click",   closeModal);
+document.getElementById("mc-close").addEventListener("click", closeModal);
+document.getElementById("ov").addEventListener("click", e => { if (e.target === e.currentTarget) closeModal(); });
+
+document.querySelectorAll("[data-close]").forEach(el => {
+  el.addEventListener("click", () => { document.getElementById(el.getAttribute("data-close")).classList.remove("on"); });
+});
+["ov-bank","ov-bank-detail","ov-user","ov-create-staff","ov-create-bank-user","ov-teams","ov-delegate","ov-edit-bank-user"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("click", e => { if (e.target === e.currentTarget) el.classList.remove("on"); });
 });
 
-// ═══════════════════════════════════════════════════════
-//  사용자 편집 저장 → Firestore 업데이트
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-save-user').addEventListener('click', async () => {
-  const uid = document.getElementById('btn-save-user')._uid;
-  const nm  = document.getElementById('ue-nm').value.trim();
-  const role = document.getElementById('ue-role').value;
-  const team = document.getElementById('ue-team').value;
-  const email = document.getElementById('ue-email').value.trim();
-  if (!nm) { alert('이름을 입력해주세요.'); return; }
-  try {
-    await updateDoc(doc(db, 'users', uid), { name: nm, role, team, email });
-    document.getElementById('ov-user').classList.remove('on');
-    alert('"' + nm + '" 정보가 저장되었습니다.');
-    renderStaff();
-  } catch (e) { alert('저장 실패: ' + e.message); }
+// ── 전역 클릭 위임
+document.addEventListener("click", async e => {
+  const pgEl = e.target.closest("[data-pg]");
+  if (pgEl && !e.target.closest(".ov")) gotoPage(pgEl.getAttribute("data-pg"));
+
+  const tidEl = e.target.closest("[data-tid]");
+  if (tidEl) openModal(tidEl.getAttribute("data-tid"));
+
+  const action = e.target.getAttribute("data-action");
+  if (action === "detail")    openBankDetail(e.target.getAttribute("data-bank"));
+  if (action === "edit")      openBankDetail(e.target.getAttribute("data-bank"), true);
+  if (action === "edit-user") openUserEdit(e.target.getAttribute("data-user"));
+  if (action === "edit-bank-user") {
+    const buid = e.target.getAttribute("data-buid");
+    const snap = await getDoc(doc(db, "users", buid));
+    if (!snap.exists()) return;
+    const u  = snap.data();
+    const bk = BANKS.find(b => b.id === u.bankId);
+    document.getElementById("ebu-title").textContent = u.name;
+    document.getElementById("ebu-name").value   = u.name;
+    document.getElementById("ebu-bank").value   = bk ? bk.name : (u.bankId || "-");
+    document.getElementById("ebu-email").value  = u.email || "";
+    document.getElementById("ebu-perm").value   = u.bankRole || "normal";
+    document.getElementById("ebu-status").value = u.status || "active";
+    document.getElementById("btn-save-edit-bank-user")._buid = buid;
+    document.getElementById("ov-edit-bank-user").classList.add("on");
+  }
 });
 
-// ═══════════════════════════════════════════════════════
-//  직원 목록 렌더링 (Firestore users)
-// ═══════════════════════════════════════════════════════
+// ── 필터 이벤트
+["f-srch","f-sta","f-pri","f-bk"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener("input", renderTable); el.addEventListener("change", renderTable); }
+});
+document.getElementById("bk-filter").addEventListener("change", function() {
+  curBk = this.value;
+  renderTable(); renderDashRecent(); setupDashboard();
+  const ctxMap = { admin: "N2SOFT 관리자", leader: "N2SOFT 팀장", staff: "N2SOFT 직원" };
+  const bkName = BANKS.find(b => b.id === curBk);
+  document.getElementById("hctx").textContent = curBk === "all" ? (ctxMap[CU.role] || CU.role) : (bkName ? bkName.name : curBk);
+});
+document.getElementById("ba-filter-bank").addEventListener("change", function() { renderBankAccounts(this.value); });
+
+// ── 페이지 이동
+function gotoPage(pid) {
+  document.querySelectorAll(".pg").forEach(p => p.classList.remove("on"));
+  document.querySelectorAll(".sb-it").forEach(i => i.classList.remove("on"));
+  const pg   = document.getElementById("pg-" + pid);
+  if (pg) pg.classList.add("on");
+  const sbit = document.querySelector(".sb-it[data-pg='" + pid + "']");
+  if (sbit) sbit.classList.add("on");
+  if (pid === "list")          renderTable();
+  if (pid === "users")         { renderStaff(); syncTeamSelects(); }
+  if (pid === "bank-accounts") renderBankAccounts();
+  if (pid === "team")          renderTeamFull();
+}
+
+// ── 직원 목록
 async function renderStaff(filterTeam) {
-  filterTeam = filterTeam || 'all';
-  const snap = await getDocs(query(collection(db,'users'), where('role','in',['admin','leader','staff'])));
-  let users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (filterTeam !== 'all') users = users.filter(u => u.team === filterTeam);
-
-  const cnt = document.getElementById('staff-cnt');
-  if (cnt) cnt.textContent = users.length + '명';
-
-  const tbody = document.getElementById('staff-tbody');
+  filterTeam = filterTeam || "all";
+  const snap  = await getDocs(query(collection(db, "users"), where("role", "in", ["admin","leader","staff"])));
+  let users   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (filterTeam !== "all") users = users.filter(u => u.team === filterTeam);
+  const cnt   = document.getElementById("staff-cnt");
+  if (cnt) cnt.textContent = users.length + "명";
+  const tbody = document.getElementById("staff-tbody");
   if (!tbody) return;
   tbody.innerHTML = users.map(u =>
-    `<tr>
-      <td><strong>${u.name}</strong></td>
-      <td style="font-family:monospace;font-size:10px;color:#7B8BAF">${u.email||'-'}</td>
-      <td><span class="rp ${ROLE_CLASS[u.role]||''}">${ROLE_LABEL[u.role]||u.role}</span></td>
-      <td>${u.team||'-'}</td>
-      <td style="font-size:10px">${u.email||'-'}</td>
-      <td>${u.lastLogin||'-'}</td>
-      <td><span class="bx ${u.status==='active'?'b-don':'b-hld'}">${u.status==='active'?'활성':'비활성'}</span></td>
-      <td><button class="btn btn-g btn-xs" data-user="${u.id}" data-action="edit-user">편집</button></td>
-    </tr>`
-  ).join('') || '<tr><td colspan="8" style="text-align:center;color:#A8B4CE;padding:16px">사용자가 없습니다</td></tr>';
+    "<tr><td><strong>" + u.name + "</strong></td>" +
+    "<td style='font-family:monospace;font-size:10px;color:#7B8BAF'>" + (u.email || "-") + "</td>" +
+    "<td><span class='rp " + (ROLE_CLASS[u.role] || "") + "'>" + (ROLE_LABEL[u.role] || u.role) + "</span></td>" +
+    "<td>" + (u.team || "-") + "</td>" +
+    "<td style='font-size:10px'>" + (u.email || "-") + "</td>" +
+    "<td>" + (u.lastLogin || "-") + "</td>" +
+    "<td><span class='bx " + (u.status === "active" ? "b-don" : "b-hld") + "'>" + (u.status === "active" ? "활성" : "비활성") + "</span></td>" +
+    "<td><button class='btn btn-g btn-xs' data-user='" + u.id + "' data-action='edit-user'>편집</button></td></tr>"
+  ).join("") || "<tr><td colspan='8' style='text-align:center;color:#A8B4CE;padding:16px'>사용자가 없습니다</td></tr>";
 }
 
-// openUserEdit — Firestore 기반
 async function openUserEdit(uid) {
-  const snap = await getDoc(doc(db, 'users', uid));
+  const snap = await getDoc(doc(db, "users", uid));
   if (!snap.exists()) return;
   const u = snap.data();
-  document.getElementById('ue-name').textContent = u.name;
-  document.getElementById('ue-nm').value    = u.name;
-  document.getElementById('ue-org').value   = u.org || 'N2SOFT';
-  document.getElementById('ue-role').value  = u.role;
-  document.getElementById('ue-email').value = u.email || '';
-  const teamSel = document.getElementById('ue-team');
-  teamSel.innerHTML = '<option value="-">미배정</option>'
-    + TEAMS.map(t => `<option value="${t.name||t}"${(t.name||t)===u.team?' selected':''}>${t.name||t}</option>`).join('');
-  document.getElementById('btn-save-user')._uid = uid;
-  document.getElementById('ov-user').classList.add('on');
+  document.getElementById("ue-name").textContent = u.name;
+  document.getElementById("ue-nm").value    = u.name;
+  document.getElementById("ue-org").value   = u.org || "N2SOFT";
+  document.getElementById("ue-role").value  = u.role;
+  document.getElementById("ue-email").value = u.email || "";
+  const teamSel = document.getElementById("ue-team");
+  teamSel.innerHTML = "<option value='-'>미배정</option>" +
+    TEAMS.map(t => "<option value='" + (t.name || t) + "'" + ((t.name || t) === u.team ? " selected" : "") + ">" + (t.name || t) + "</option>").join("");
+  document.getElementById("btn-save-user")._uid = uid;
+  document.getElementById("ov-user").classList.add("on");
 }
 
-// ═══════════════════════════════════════════════════════
-//  은행 계정 목록
-// ═══════════════════════════════════════════════════════
+document.getElementById("btn-save-user").addEventListener("click", async () => {
+  const uid  = document.getElementById("btn-save-user")._uid;
+  const nm   = document.getElementById("ue-nm").value.trim();
+  const role = document.getElementById("ue-role").value;
+  const team = document.getElementById("ue-team").value;
+  const email= document.getElementById("ue-email").value.trim();
+  if (!nm) { alert("이름을 입력해주세요."); return; }
+  try {
+    await updateDoc(doc(db, "users", uid), { name: nm, role, team, email });
+    document.getElementById("ov-user").classList.remove("on");
+    alert(nm + " 정보가 저장되었습니다.");
+    renderStaff();
+  } catch (e) { alert("저장 실패: " + e.message); }
+});
+["mc-user-close","mc-user-cancel"].forEach(id => {
+  document.getElementById(id).addEventListener("click", () => document.getElementById("ov-user").classList.remove("on"));
+});
+
+// ── 은행 계정 목록
 async function renderBankAccounts(filterBankId) {
-  const q = filterBankId
-    ? query(collection(db,'users'), where('role','==','bank'), where('bankId','==',filterBankId))
-    : query(collection(db,'users'), where('role','==','bank'));
+  filterBankId = filterBankId || "";
+  const q    = filterBankId
+    ? query(collection(db, "users"), where("role", "==", "bank"), where("bankId", "==", filterBankId))
+    : query(collection(db, "users"), where("role", "==", "bank"));
   const snap = await getDocs(q);
-  const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-  const cnt = document.getElementById('bank-acc-cnt');
-  if (cnt) cnt.textContent = users.length + '명';
-
-  const tbody = document.getElementById('bank-acc-tbody');
+  const users= snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const cnt  = document.getElementById("bank-acc-cnt");
+  if (cnt) cnt.textContent = users.length + "명";
+  const tbody= document.getElementById("bank-acc-tbody");
   if (!tbody) return;
-  const permLabel = {normal:'일반', admin:'🔑 관리자'};
   tbody.innerHTML = users.map(u => {
     const bk = BANKS.find(b => b.id === u.bankId);
-    return `<tr>
-      <td><strong>${u.name}</strong></td>
-      <td style="font-family:monospace;font-size:10px;color:#7B8BAF">${u.email||'-'}</td>
-      <td><span class="bx b-bnk">${bk?.name||u.bankId||'-'}</span></td>
-      <td style="font-size:10px">${u.email||'-'}</td>
-      <td><span class="delegate-badge ${u.bankRole==='admin'?'db-delegated':'db-full'}">${permLabel[u.bankRole]||'일반'}</span></td>
-      <td>${u.lastLogin||'-'}</td>
-      <td><span class="bx ${u.status==='active'?'b-don':'b-hld'}">${u.status==='active'?'활성':'비활성'}</span></td>
-      <td><button class="btn btn-g btn-xs" data-buid="${u.id}" data-action="edit-bank-user">편집</button></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:#A8B4CE;padding:16px">계정이 없습니다</td></tr>';
+    return "<tr><td><strong>" + u.name + "</strong></td>" +
+      "<td style='font-family:monospace;font-size:10px;color:#7B8BAF'>" + (u.email || "-") + "</td>" +
+      "<td><span class='bx b-bnk'>" + (bk ? bk.name : (u.bankId || "-")) + "</span></td>" +
+      "<td style='font-size:10px'>" + (u.email || "-") + "</td>" +
+      "<td><span class='delegate-badge " + (u.bankRole === "admin" ? "db-delegated" : "db-full") + "'>" + (u.bankRole === "admin" ? "🔑 관리자" : "일반") + "</span></td>" +
+      "<td>" + (u.lastLogin || "-") + "</td>" +
+      "<td><span class='bx " + (u.status === "active" ? "b-don" : "b-hld") + "'>" + (u.status === "active" ? "활성" : "비활성") + "</span></td>" +
+      "<td><button class='btn btn-g btn-xs' data-buid='" + u.id + "' data-action='edit-bank-user'>편집</button></td></tr>";
+  }).join("") || "<tr><td colspan='8' style='text-align:center;color:#A8B4CE;padding:16px'>계정이 없습니다</td></tr>";
 }
 
-// ═══════════════════════════════════════════════════════
-//  팀 관련 헬퍼
-// ═══════════════════════════════════════════════════════
+document.getElementById("btn-save-edit-bank-user").addEventListener("click", async () => {
+  const buid = document.getElementById("btn-save-edit-bank-user")._buid;
+  try {
+    await updateDoc(doc(db, "users", buid), {
+      name:     document.getElementById("ebu-name").value,
+      email:    document.getElementById("ebu-email").value,
+      bankRole: document.getElementById("ebu-perm").value,
+      status:   document.getElementById("ebu-status").value
+    });
+    document.getElementById("ov-edit-bank-user").classList.remove("on");
+    renderBankAccounts(document.getElementById("ba-filter-bank").value);
+    alert("저장되었습니다.");
+  } catch(e) { alert("저장 실패: " + e.message); }
+});
+
+// ── 팀 관련
 function syncTeamSelects() {
-  ['cs-team','ue-team'].forEach(sid => {
+  ["cs-team","ue-team"].forEach(sid => {
     const el = document.getElementById(sid); if (!el) return;
     const cur = el.value;
-    el.innerHTML = '<option value="-">미배정</option>'
-      + TEAMS.map(t => {
-          const nm = t.name || t;
-          return `<option value="${nm}"${nm===cur?' selected':''}>${nm}</option>`;
-        }).join('');
+    el.innerHTML = "<option value='-'>미배정</option>" +
+      TEAMS.map(t => "<option value='" + (t.name||t) + "'" + ((t.name||t) === cur ? " selected" : "") + ">" + (t.name||t) + "</option>").join("");
   });
   renderTeamsTabs(); renderTeamsList();
 }
+
 function renderTeamsTabs() {
-  const tabs = document.getElementById('team-filter-tabs'); if (!tabs) return;
-  tabs.innerHTML = '<span class="team-tab on" data-team="all">전체</span>'
-    + TEAMS.map(t => `<span class="team-tab" data-team="${t.name||t}">${t.name||t}</span>`).join('')
-    + '<span class="team-tab" data-team="-">미배정</span>';
-  tabs.querySelectorAll('.team-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.querySelectorAll('.team-tab').forEach(t => t.classList.remove('on'));
-      tab.classList.add('on');
-      renderStaff(tab.getAttribute('data-team'));
+  const tabs = document.getElementById("team-filter-tabs"); if (!tabs) return;
+  tabs.innerHTML = "<span class='team-tab on' data-team='all'>전체</span>" +
+    TEAMS.map(t => "<span class='team-tab' data-team='" + (t.name||t) + "'>" + (t.name||t) + "</span>").join("") +
+    "<span class='team-tab' data-team='-'>미배정</span>";
+  tabs.querySelectorAll(".team-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.querySelectorAll(".team-tab").forEach(t => t.classList.remove("on"));
+      tab.classList.add("on");
+      renderStaff(tab.getAttribute("data-team"));
     });
   });
 }
+
 function renderTeamsList() {
-  const tbody = document.getElementById('teams-tbody'); if (!tbody) return;
+  const tbody = document.getElementById("teams-tbody"); if (!tbody) return;
   tbody.innerHTML = TEAMS.map(t => {
     const nm = t.name || t;
-    return `<tr><td><strong>${nm}</strong></td><td>-</td><td>-</td>
-      <td><button class="btn btn-g btn-xs" data-team-del="${t.id||nm}">삭제</button></td></tr>`;
-  }).join('') || '<tr><td colspan="4" style="text-align:center;color:#A8B4CE;padding:12px">팀이 없습니다</td></tr>';
-  tbody.querySelectorAll('[data-team-del]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const tid = btn.getAttribute('data-team-del');
-      if (!confirm('팀을 삭제하시겠습니까?')) return;
+    return "<tr><td><strong>" + nm + "</strong></td><td>-</td><td>-</td>" +
+      "<td><button class='btn btn-g btn-xs' data-team-del='" + (t.id || nm) + "'>삭제</button></td></tr>";
+  }).join("") || "<tr><td colspan='4' style='text-align:center;color:#A8B4CE;padding:12px'>팀이 없습니다</td></tr>";
+  tbody.querySelectorAll("[data-team-del]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const tid = btn.getAttribute("data-team-del");
+      if (!confirm("팀을 삭제하시겠습니까?")) return;
       try {
-        if (tid && tid.length > 5) await deleteDoc(doc(db, 'teams', tid));
-        TEAMS = TEAMS.filter(t => (t.id||t.name||t) !== tid);
+        if (tid && tid.length > 5) await deleteDoc(doc(db, "teams", tid));
+        TEAMS = TEAMS.filter(t => (t.id || t.name || t) !== tid);
         syncTeamSelects();
-      } catch(e) { alert('삭제 실패: ' + e.message); }
+      } catch(e) { alert("삭제 실패: " + e.message); }
     });
   });
 }
 
-// ═══════════════════════════════════════════════════════
-//  카테고리 상세 필드 자동 설정
-// ═══════════════════════════════════════════════════════
-const CAT_FIELDS = {
-  bug:     { title:'버그/오류 수정', fields: [
-    {label:'발생 일시', type:'text', placeholder:'예: 2025-07-14 09:30'},
-    {label:'발생 화면 경로', type:'text', placeholder:'예: 여신심사 > 신규심사 > 담보물 등록'},
-    {label:'오류 메시지', type:'textarea', placeholder:'화면에 표시된 오류 메시지'},
-    {label:'재현 방법', type:'textarea', placeholder:'단계별 재현 절차'},
-    {label:'재현율', type:'text', placeholder:'예: 100% / 간헐적'},
-    {label:'영향 범위', type:'text', placeholder:'예: 담보물 등록 기능 전체 중단'},
-  ]},
-  improve: { title:'기능 개선', fields: [
-    {label:'개선 대상 화면', type:'text', placeholder:'예: 여신심사 > 담보물 조회'},
-    {label:'현재 동작 방식', type:'textarea', placeholder:'현재 어떻게 동작하는지'},
-    {label:'개선 요청 사항', type:'textarea', placeholder:'어떻게 바뀌길 원하는지'},
-    {label:'개선 기대 효과', type:'text', placeholder:'예: 업무 처리 시간 단축'},
-  ]},
-  new: { title:'신규 기능 요청', fields: [
-    {label:'요청 기능명', type:'text', placeholder:'예: 여신 한도 일괄 조회'},
-    {label:'기능 설명', type:'textarea', placeholder:'기능의 목적과 내용'},
-    {label:'필요 이유', type:'textarea', placeholder:'해당 기능이 필요한 이유'},
-    {label:'참고 자료', type:'text', placeholder:'참고할 화면명 또는 내용'},
-  ]},
-  perf: { title:'성능 개선', fields: [
-    {label:'대상 화면/기능', type:'text', placeholder:'예: 여신심사 > 리포트 출력'},
-    {label:'현재 속도', type:'text', placeholder:'예: 조회 시 약 30초 소요'},
-    {label:'발생 시간대', type:'text', placeholder:'예: 월말 마감 시간'},
-    {label:'영향 건수', type:'text', placeholder:'예: 일 평균 200건'},
-    {label:'상세 내용', type:'textarea', placeholder:'성능 문제 상황 상세 설명'},
-  ]},
-  data: { title:'데이터 처리', fields: [
-    {label:'요청 유형', type:'select', options:['데이터 조회','데이터 수정','데이터 삭제','데이터 이관','배치 처리']},
-    {label:'대상 테이블/항목', type:'text', placeholder:'예: 여신 한도 테이블'},
-    {label:'처리 대상 건수', type:'text', placeholder:'예: 약 1,200건'},
-    {label:'요청 사유', type:'textarea', placeholder:'데이터 처리가 필요한 이유'},
-    {label:'처리 기준', type:'textarea', placeholder:'처리 조건/기준 설명'},
-  ]},
-  etc: { title:'기타', fields: [
-    {label:'요청 유형', type:'text', placeholder:'예: 문서 요청, 교육 요청 등'},
-    {label:'요청 내용', type:'textarea', placeholder:'요청 사항 상세 입력'},
-    {label:'참고 사항', type:'text', placeholder:'추가 참고 사항'},
-  ]},
-};
-
-document.getElementById('nf-cat').addEventListener('change', function() {
-  const cat = this.value;
-  const ph = document.getElementById('detail-placeholder');
-  const tbl = document.getElementById('detail-table');
-  if (!cat) { ph.style.display='block'; tbl.style.display='none'; return; }
-  ph.style.display = 'none'; tbl.style.display = 'table';
-  const def = CAT_FIELDS[cat];
-  const titleEl = document.getElementById('nf-title');
-  if (!titleEl.value) titleEl.placeholder = '예: ' + def.title + ' 관련 문의';
-  tbl.innerHTML = def.fields.map(f => {
-    let input = '';
-    if (f.type==='select')
-      input = `<select class="fc2" style="font-size:12px"><option value="">-- 선택 --</option>${f.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
-    else if (f.type==='textarea')
-      input = `<textarea class="fc2" style="min-height:55px;font-size:12px" placeholder="${f.placeholder}"></textarea>`;
-    else
-      input = `<input type="text" class="fc2" style="font-size:12px" placeholder="${f.placeholder}">`;
-    return `<tr><td class="lbl">${f.label}</td><td class="val">${input}</td></tr>`;
-  }).join('');
-});
-
-// ═══════════════════════════════════════════════════════
-//  긴급도 선택 / 파일 업로드
-// ═══════════════════════════════════════════════════════
-document.querySelectorAll('.pp[data-pv]').forEach(el => {
-  el.addEventListener('click', () => {
-    document.querySelectorAll('.pp').forEach(p => p.className='pp');
-    const cls = {보통:'sn', 높음:'sh', 긴급:'sc'};
-    el.className = 'pp ' + (cls[el.getAttribute('data-pv')]||'sn');
-  });
-});
-});
-
-// ═══════════════════════════════════════════════════════
-//  모달 닫기 / 이벤트 위임
-// ═══════════════════════════════════════════════════════
-function closeModal() { document.getElementById('ov').classList.remove('on'); }
-document.getElementById('mc-btn').addEventListener('click', closeModal);
-document.getElementById('mc-close').addEventListener('click', closeModal);
-document.getElementById('ov').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
-
-// data-close 모달들
-document.querySelectorAll('[data-close]').forEach(el => {
-  el.addEventListener('click', () => {
-    document.getElementById(el.getAttribute('data-close'))?.classList.remove('on');
-  });
-});
-['ov-bank','ov-bank-detail','ov-user','ov-create-staff','ov-create-bank-user','ov-teams','ov-delegate','ov-edit-bank-user'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('click', e => { if(e.target===e.currentTarget) el.classList.remove('on'); });
-});
-
-// 전역 클릭 위임
-document.addEventListener('click', async e => {
-  const pgEl = e.target.closest('[data-pg]');
-  if (pgEl && !e.target.closest('.ov')) gotoPage(pgEl.getAttribute('data-pg'));
-
-  const tidEl = e.target.closest('[data-tid]');
-  if (tidEl) openModal(tidEl.getAttribute('data-tid'));
-
-  const action = e.target.getAttribute('data-action');
-  if (action === 'detail') openBankDetail(e.target.getAttribute('data-bank'));
-  if (action === 'edit')   openBankDetail(e.target.getAttribute('data-bank'), true);
-  if (action === 'edit-user') openUserEdit(e.target.getAttribute('data-user'));
-  if (action === 'edit-bank-user') {
-    const buid = e.target.getAttribute('data-buid');
-    const snap = await getDoc(doc(db,'users',buid));
-    if (!snap.exists()) return;
-    const u = snap.data();
-    const bk = BANKS.find(b => b.id===u.bankId);
-    document.getElementById('ebu-title').textContent = u.name;
-    document.getElementById('ebu-name').value   = u.name;
-    document.getElementById('ebu-bank').value   = bk?.name || u.bankId || '-';
-    document.getElementById('ebu-email').value  = u.email || '';
-    document.getElementById('ebu-perm').value   = u.bankRole || 'normal';
-    document.getElementById('ebu-status').value = u.status || 'active';
-    document.getElementById('btn-save-edit-bank-user')._buid = buid;
-    document.getElementById('ov-edit-bank-user').classList.add('on');
-  }
-});
-
-document.getElementById('btn-save-edit-bank-user').addEventListener('click', async () => {
-  const buid = document.getElementById('btn-save-edit-bank-user')._buid;
+document.getElementById("btn-manage-teams").addEventListener("click", () => { syncTeamSelects(); document.getElementById("ov-teams").classList.add("on"); });
+document.getElementById("btn-add-team").addEventListener("click", async () => {
+  const nm = document.getElementById("new-team-name").value.trim();
+  if (!nm) { alert("팀 이름을 입력해주세요."); return; }
   try {
-    await updateDoc(doc(db,'users',buid), {
-      name:     document.getElementById('ebu-name').value,
-      email:    document.getElementById('ebu-email').value,
-      bankRole: document.getElementById('ebu-perm').value,
-      status:   document.getElementById('ebu-status').value,
-    });
-    document.getElementById('ov-edit-bank-user').classList.remove('on');
-    renderBankAccounts(document.getElementById('ba-filter-bank').value);
-    alert('저장되었습니다.');
-  } catch(e) { alert('저장 실패: '+e.message); }
+    await addDoc(collection(db, "teams"), { name: nm, createdAt: serverTimestamp() });
+    TEAMS.push({ name: nm });
+    document.getElementById("new-team-name").value = "";
+    syncTeamSelects();
+    alert(nm + " 팀이 추가되었습니다.");
+  } catch(e) { alert("저장 실패: " + e.message); }
 });
 
-// 필터
-['f-srch','f-sta','f-pri','f-bk'].forEach(id => {
-  const el = document.getElementById(id);
-  if(el) { el.addEventListener('input', renderTable); el.addEventListener('change', renderTable); }
-});
-document.getElementById('bk-filter').addEventListener('change', function() {
-  curBk = this.value;
-  renderTable(); renderDashRecent(); setupDashboard();
-  const ctxMap = {admin:'N2SOFT 관리자',leader:'N2SOFT 팀장',staff:'N2SOFT 유지보수 직원'};
-  const bkName = BANKS.find(b=>b.id===curBk)?.name;
-  document.getElementById('hctx').textContent = curBk==='all' ? (ctxMap[CU.role]||CU.role) : (bkName||curBk);
-});
-document.getElementById('ba-filter-bank').addEventListener('change', function() {
-  renderBankAccounts(this.value);
+document.getElementById("btn-create-staff").addEventListener("click", () => { syncTeamSelects(); document.getElementById("ov-create-staff").classList.add("on"); });
+document.getElementById("btn-save-staff").addEventListener("click", () => {
+  const email = document.getElementById("cs-email").value.trim();
+  const name  = document.getElementById("cs-name").value.trim();
+  if (!name || !email) { alert("이름과 이메일을 입력해주세요."); return; }
+  alert("계정 생성 안내:\n\n1. Firebase 콘솔 → Authentication → 사용자 추가\n2. 이메일: " + email + "\n3. 임시 비밀번호 설정 후 직원에게 전달\n4. Firestore → users → UID로 문서 생성\n   name: " + name + "\n   role: " + document.getElementById("cs-role").value + "\n   team: " + document.getElementById("cs-team").value + "\n   org: N2SOFT\n   status: active");
+  document.getElementById("ov-create-staff").classList.remove("on");
 });
 
-// 페이지 이동
-function gotoPage(pid) {
-  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.sb-it').forEach(i=>i.classList.remove('on'));
-  const pg = document.getElementById('pg-'+pid);
-  if(pg) pg.classList.add('on');
-  const sbit = document.querySelector('.sb-it[data-pg="'+pid+'"]');
-  if(sbit) sbit.classList.add('on');
-  if(pid==='list') renderTable();
-  if(pid==='users') { renderStaff(); syncTeamSelects(); }
-  if(pid==='bank-accounts') renderBankAccounts();
-  if(pid==='team') renderTeamFull();
+document.getElementById("btn-add-bank").addEventListener("click", () => document.getElementById("ov-bank").classList.add("on"));
+document.getElementById("btn-save-bank").addEventListener("click", async () => {
+  const name   = document.getElementById("new-bank-name").value.trim();
+  const ver    = document.getElementById("new-bank-ver").value || "v4.2.1";
+  const status = document.getElementById("new-bank-status").value;
+  if (!name) { alert("은행명을 입력해주세요."); return; }
+  try {
+    const ref = await addDoc(collection(db, "banks"), { name, systemVersion: ver, contractStatus: status, managerId: "", createdAt: serverTimestamp() });
+    BANKS.push({ id: ref.id, name, systemVersion: ver, contractStatus: status });
+    await loadMaster();
+    document.getElementById("ov-bank").classList.remove("on");
+    alert(name + "이 추가되었습니다.");
+  } catch(e) { alert("저장 실패: " + e.message); }
+});
+
+document.getElementById("btn-create-bank-user").addEventListener("click", () => document.getElementById("ov-create-bank-user").classList.add("on"));
+document.getElementById("btn-delegate-hint").addEventListener("click", () => document.getElementById("ov-delegate").classList.add("on"));
+document.getElementById("btn-save-bank-user").addEventListener("click", () => {
+  const email = document.getElementById("cbu-email").value.trim();
+  const name  = document.getElementById("cbu-name").value.trim();
+  const bank  = document.getElementById("cbu-bank").value;
+  if (!name || !email || !bank) { alert("이름, 이메일, 저축은행을 모두 입력해주세요."); return; }
+  alert("계정 생성 안내:\n\n1. Firebase 콘솔 → Authentication → 사용자 추가\n2. 이메일: " + email + "\n3. Firestore → users → UID로 문서 생성\n   name: " + name + "\n   role: bank\n   bankId: (banks 컬렉션의 문서 ID)\n   bankName: " + BANKS.find(b=>b.id===bank)?.name + "\n   status: active");
+  document.getElementById("ov-create-bank-user").classList.remove("on");
+});
+
+async function openBankDetail(bankIdOrName) {
+  const bank = BANKS.find(b => b.id === bankIdOrName || b.name === bankIdOrName);
+  if (!bank) return;
+  document.getElementById("bd-title").textContent   = bank.name;
+  document.getElementById("bd-ver").textContent     = bank.systemVersion || "-";
+  document.getElementById("bd-status").textContent  = bank.contractStatus || "-";
+  document.getElementById("bd-mgr").textContent     = bank.managerName || "-";
+  const bankTix = (window._tickets || []).filter(t => t.bankId === bank.id);
+  document.getElementById("bd-count").textContent   = bankTix.length + "건";
+  document.getElementById("bd-last").textContent    = bankTix[0] && bankTix[0].createdAt && bankTix[0].createdAt.toDate ? bankTix[0].createdAt.toDate().toLocaleDateString("ko-KR") : "-";
+  document.getElementById("bd-tbody").innerHTML = bankTix.slice(0,5).map(t =>
+    "<tr data-tid='" + t.id + "'><td style='font-size:9px;color:#7B8BAF'>" + (t.ticketNo || t.id.slice(0,8)) + "</td>" +
+    "<td>" + t.title + "</td>" +
+    "<td><span class='bx " + (PB[t.priority]||"b-nor") + "'>" + (t.priority||"-") + "</span></td>" +
+    "<td><span class='bx " + (SB[t.status]||"b-nor") + "'>" + (t.status||"-") + "</span></td>" +
+    "<td>" + (t.assigneeName || "미배정") + "</td></tr>"
+  ).join("") || "<tr><td colspan='5' style='text-align:center;color:#A8B4CE;padding:12px'>신청 내역 없음</td></tr>";
+  document.getElementById("ov-bank-detail").classList.add("on");
 }
+["mc-bd-close","mc-bd-cancel"].forEach(id => {
+  document.getElementById(id).addEventListener("click", () => document.getElementById("ov-bank-detail").classList.remove("on"));
+});
 
-// 팀 현황 렌더링
 async function renderTeamFull() {
-  const snap = await getDocs(query(collection(db,'users'), where('role','in',['staff','leader'])));
-  const members = snap.docs.map(d=>({id:d.id,...d.data()}));
-  const mgrid = document.getElementById('member-grid');
-  if(mgrid) {
-    mgrid.innerHTML = members.map(m=>{
-      const myTix = (window._tickets||[]).filter(t=>t.assigneeId===m.id);
-      return `<div class="member-card">
-        <div class="mc-name">${m.name} <span style="font-size:9px;color:#7B8BAF">${m.team||'-'}</span></div>
-        <div class="mc-count">${myTix.length}<span style="font-size:12px;color:#7B8BAF">건</span></div>
-        <div class="mc-lbl">완료 ${myTix.filter(t=>t.status==='완료').length} · 처리중 ${myTix.filter(t=>t.status==='처리중').length} · 대기 ${myTix.filter(t=>t.status==='대기').length}</div>
-      </div>`;
-    }).join('');
+  const snap = await getDocs(query(collection(db, "users"), where("role", "in", ["staff","leader"])));
+  const members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const mgrid = document.getElementById("member-grid");
+  if (mgrid) {
+    mgrid.innerHTML = members.map(m => {
+      const myTix = (window._tickets || []).filter(t => t.assigneeId === m.id);
+      return "<div class='member-card'>" +
+        "<div class='mc-name'>" + m.name + " <span style='font-size:9px;color:#7B8BAF'>" + (m.team||"-") + "</span></div>" +
+        "<div class='mc-count'>" + myTix.length + "<span style='font-size:12px;color:#7B8BAF'>건</span></div>" +
+        "<div class='mc-lbl'>완료 " + myTix.filter(t=>t.status==="완료").length + " · 처리중 " + myTix.filter(t=>t.status==="처리중").length + " · 대기 " + myTix.filter(t=>t.status==="대기").length + "</div>" +
+        "</div>";
+    }).join("");
   }
 }
-
-// 은행 상세 모달
-async function openBankDetail(bankIdOrName) {
-  const bank = BANKS.find(b=>b.id===bankIdOrName||b.name===bankIdOrName);
-  if (!bank) return;
-  document.getElementById('bd-title').textContent = bank.name;
-  document.getElementById('bd-ver').textContent    = bank.systemVersion||'-';
-  document.getElementById('bd-status').textContent = bank.contractStatus||'-';
-  document.getElementById('bd-mgr').textContent    = bank.managerName||'-';
-  const bankTix = (window._tickets||[]).filter(t=>t.bankId===bank.id);
-  document.getElementById('bd-count').textContent = bankTix.length+'건';
-  document.getElementById('bd-last').textContent  = bankTix[0]?.createdAt?.toDate ? bankTix[0].createdAt.toDate().toLocaleDateString('ko-KR') : '-';
-  document.getElementById('bd-tbody').innerHTML = bankTix.slice(0,5).map(t=>
-    `<tr data-tid="${t.id}"><td style="font-size:9px;color:#7B8BAF">${t.ticketNo||t.id.slice(0,8)}</td><td>${t.title}</td><td><span class="bx ${PB[t.priority]||'b-nor'}">${t.priority||'-'}</span></td><td><span class="bx ${SB[t.status]||'b-nor'}">${t.status||'-'}</span></td><td>${t.assigneeName||'미배정'}</td></tr>`
-  ).join('') || '<tr><td colspan="5" style="text-align:center;color:#A8B4CE;padding:12px">신청 내역 없음</td></tr>';
-  document.getElementById('ov-bank-detail').classList.add('on');
-}
-
-// 팀 관리 버튼들
-document.getElementById('btn-manage-teams').addEventListener('click', () => {
-  syncTeamSelects();
-  document.getElementById('ov-teams').classList.add('on');
-});
-document.getElementById('btn-create-staff').addEventListener('click', () => {
-  syncTeamSelects();
-  document.getElementById('ov-create-staff').classList.add('on');
-});
-document.getElementById('btn-add-bank').addEventListener('click', () => {
-  document.getElementById('ov-bank').classList.add('on');
-});
-document.getElementById('btn-create-bank-user').addEventListener('click', () => {
-  document.getElementById('ov-create-bank-user').classList.add('on');
-});
-document.getElementById('btn-delegate-hint').addEventListener('click', () => {
-  document.getElementById('ov-delegate').classList.add('on');
-});
-['mc-bd-close','mc-bd-cancel'].forEach(id => {
-  document.getElementById(id)?.addEventListener('click', () => {
-    document.getElementById('ov-bank-detail').classList.remove('on');
-  });
-});
-['mc-user-close','mc-user-cancel'].forEach(id => {
-  document.getElementById(id)?.addEventListener('click', () => {
-    document.getElementById('ov-user').classList.remove('on');
-  });
-});
 
 </script>
 </body>
