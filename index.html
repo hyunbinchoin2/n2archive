@@ -223,7 +223,115 @@ textarea.fc2{resize:vertical;line-height:1.6}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
-@media(max-width:900px){.sgrid{grid-template-columns:repeat(2,1fr)}.sb{display:none}}
+
+/* ── 반응형 ───────────────────────────────────── */
+/* 태블릿 (768px ~ 1024px) */
+@media(max-width:1024px){
+  .ll{padding:32px 36px}
+  .ll h1{font-size:24px}
+  #login{flex-direction:column}
+  .ll{min-height:220px;justify-content:center;padding:28px 24px}
+  .ll-feats{display:none}
+  .lr{width:100%;padding:28px 24px}
+  .sgrid{grid-template-columns:repeat(2,1fr)}
+  .main{padding:14px}
+}
+
+/* 모바일 (max 767px) */
+@media(max-width:767px){
+  body{font-size:12px}
+
+  /* 로그인 */
+  #login{flex-direction:column;height:auto;min-height:100vh}
+  .ll{display:none}
+  .lr{width:100%;padding:32px 20px;min-height:100vh;justify-content:flex-start;padding-top:48px}
+  .lr h2{font-size:22px}
+
+  /* 헤더 */
+  .hdr{padding:0 12px;height:48px}
+  .hdr-sep,.hdr-ctx{display:none}
+  .hdr-nm,.hdr-rl{display:none}
+  .hdr-brand{font-size:12px}
+  .btn-out{padding:4px 8px;font-size:10px}
+
+  /* 햄버거 버튼 */
+  .hdr-menu-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer;font-size:16px;color:#fff;margin-right:8px;flex-shrink:0}
+
+  /* 사이드바 → 드로어 */
+  .sb{
+    position:fixed;top:48px;left:0;bottom:0;z-index:300;
+    width:240px;transform:translateX(-100%);
+    transition:transform .25s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,.15);
+  }
+  .sb.open{transform:translateX(0)}
+  .sb-overlay{display:none;position:fixed;inset:0;top:48px;background:rgba(0,0,0,.4);z-index:299}
+  .sb-overlay.on{display:block}
+
+  /* 메인 */
+  .app-body{display:block}
+  .main{padding:12px;height:calc(100vh - 48px - 52px);overflow-y:auto}
+
+  /* 하단 탭바 */
+  .bottom-tab{
+    display:flex;position:fixed;bottom:0;left:0;right:0;height:52px;
+    background:#fff;border-top:1px solid var(--bd);z-index:200;
+  }
+  .btab{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;cursor:pointer;color:#7B8BAF;font-size:9px;font-weight:600;
+    border:none;background:none;padding:0;transition:color .15s;
+  }
+  .btab .bt-ic{font-size:18px;line-height:1}
+  .btab.on{color:var(--p)}
+  .btab.on .bt-ic{position:relative}
+  .btab.on .bt-ic::after{content:'';position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:20px;height:2px;background:var(--p);border-radius:2px}
+
+  /* 통계 카드 */
+  .sgrid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .sc{padding:11px}
+  .snum{font-size:20px}
+
+  /* 카드 */
+  .card-h{padding:9px 12px}
+  .card-b{padding:11px}
+
+  /* 테이블 → 스크롤 */
+  .card{overflow-x:auto}
+  table{min-width:600px}
+  th,td{padding:7px 9px;font-size:10px}
+
+  /* 폼 */
+  .fgrid{grid-template-columns:1fr}
+  .ff{grid-column:1}
+
+  /* 모달 */
+  .modal{border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-height:92vh;margin:0}
+  .ov{padding:0;align-items:flex-end}
+
+  /* 신청서 */
+  .pp-wrap{gap:4px}
+  .pp{padding:7px 4px}
+  .pp .pi{font-size:14px}
+  .pp .pl{font-size:10px}
+  .pp .pd{display:none}
+
+  /* 대시보드 그리드 */
+  #dash-grid{grid-template-columns:1fr !important}
+  .member-grid{grid-template-columns:repeat(2,1fr)}
+
+  /* 필터바 */
+  .fbar{gap:5px}
+  .fbar .fc2{font-size:10px;padding:5px 8px}
+  .sw{min-width:120px}
+}
+
+/* 데스크탑에서 하단탭/햄버거 숨김 */
+@media(min-width:768px){
+  .bottom-tab{display:none}
+  .hdr-menu-btn{display:none}
+  .sb-overlay{display:none !important}
+}
 </style>
 </head>
 <body>
@@ -264,8 +372,14 @@ textarea.fc2{resize:vertical;line-height:1.6}
       <label>소속 저축은행</label>
       <select class="fc" id="sel-bk"><option value="">-- 선택 --</option></select>
     </div>
-    <div class="fg"><label>아이디</label><input type="text" class="fc" id="li-id" placeholder="아이디"></div>
-    <div class="fg"><label>비밀번호</label><input type="password" class="fc" id="li-pw" placeholder="비밀번호"></div>
+    <div class="fg"><label>아이디</label><input type="text" class="fc" id="li-id" placeholder="이메일 주소" autocomplete="off"></div>
+    <div class="fg">
+      <label>비밀번호</label>
+      <input type="password" class="fc" id="li-pw" placeholder="비밀번호" autocomplete="off">
+      <div id="capslock-warn" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(232,150,10,.1);border:1px solid rgba(232,150,10,.3);border-radius:5px;font-size:11px;color:#E8960A">
+        ⚠️ Caps Lock이 켜져 있습니다
+      </div>
+    </div>
     <button class="btn-login" id="btn-login">로그인 →</button>
     <div class="lr-foot">© 2025 N2SOFT Co., Ltd. All rights reserved.</div>
   </div>
@@ -274,6 +388,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
 <!-- ===== APP ===== -->
 <div id="app">
   <div class="hdr">
+    <button class="hdr-menu-btn" id="btn-hamburger">☰</button>
     <div class="hdr-brand"><div class="hdr-logo">N2</div>여신관리 유지보수 포털</div>
     <div class="hdr-sep"></div>
     <div class="hdr-ctx"><div class="hdr-dot" id="hdot"></div><span id="hctx">-</span></div>
@@ -283,6 +398,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       <button class="btn-out" id="btn-out">로그아웃</button>
     </div>
   </div>
+  <div class="sb-overlay" id="sb-overlay"></div>
   <div class="app-body">
     <div class="sb" id="sidebar">
       <div id="sb-bk" style="display:none">
@@ -519,24 +635,48 @@ textarea.fc2{resize:vertical;line-height:1.6}
 
       <!-- 통계 -->
       <div id="pg-stats" class="pg">
-        <div class="ph"><h2>통계 &amp; 리포트</h2><p>유지보수 처리 현황 통계를 확인합니다</p></div>
-        <div class="sgrid">
-          <div class="sc"><div class="sc-bar" style="background:var(--p)"></div><div class="sic">📅</div><div class="snum">8</div><div class="slbl">이번 달 신규</div></div>
-          <div class="sc"><div class="sc-bar" style="background:var(--ok)"></div><div class="sic">⏱</div><div class="snum" style="font-size:20px">2.3<span style="font-size:11px">일</span></div><div class="slbl">평균 처리 시간</div></div>
-          <div class="sc"><div class="sc-bar" style="background:var(--sky)"></div><div class="sic">🎯</div><div class="snum" style="font-size:20px">98<span style="font-size:11px">%</span></div><div class="slbl">SLA 준수율</div></div>
-          <div class="sc"><div class="sc-bar" style="background:var(--a)"></div><div class="sic">⚠️</div><div class="snum">1</div><div class="slbl">기한 초과</div></div>
-        </div>
-        <div class="card"><div class="card-h"><h3>월별 신청 현황 (2025)</h3></div><div class="card-b">
-          <div style="display:flex;gap:8px;align-items:flex-end;height:80px">
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:#4A5A7A">15</span><div style="width:100%;height:45px;background:var(--p);opacity:.7;border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:#7B8BAF">1월</span></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:#4A5A7A">19</span><div style="width:100%;height:57px;background:var(--p);opacity:.75;border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:#7B8BAF">2월</span></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:#4A5A7A">23</span><div style="width:100%;height:69px;background:var(--p);opacity:.8;border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:#7B8BAF">3월</span></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:#4A5A7A">14</span><div style="width:100%;height:42px;background:var(--p);opacity:.7;border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:#7B8BAF">4월</span></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:#4A5A7A">25</span><div style="width:100%;height:75px;background:var(--p);opacity:.85;border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:#7B8BAF">5월</span></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:#4A5A7A">20</span><div style="width:100%;height:60px;background:var(--p);opacity:.8;border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:#7B8BAF">6월</span></div>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:var(--a);font-weight:700">8</span><div style="width:100%;height:24px;background:var(--a);border-radius:3px 3px 0 0"></div><span style="font-size:9px;color:var(--a);font-weight:700">7월</span></div>
+        <div class="ph">
+          <div class="ph-row">
+            <div><h2>통계 &amp; 리포트</h2><p>실시간 유지보수 처리 현황 통계입니다</p></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select class="fc2" id="stats-year" style="width:90px;font-size:11px;padding:5px 8px"></select>
+              <select class="fc2" id="stats-bk" style="width:130px;font-size:11px;padding:5px 8px"><option value="">전체 저축은행</option></select>
+            </div>
           </div>
-        </div></div>
+        </div>
+        <!-- KPI 카드 -->
+        <div class="sgrid" id="stats-kpi">
+          <div class="sc"><div class="sc-bar" style="background:var(--p)"></div><div class="sic">📅</div><div class="snum" id="st-month">-</div><div class="slbl">이번 달 신규</div></div>
+          <div class="sc"><div class="sc-bar" style="background:var(--ok)"></div><div class="sic">⏱</div><div class="snum" id="st-avg" style="font-size:18px">-</div><div class="slbl">평균 처리 시간</div></div>
+          <div class="sc"><div class="sc-bar" style="background:var(--sky)"></div><div class="sic">✅</div><div class="snum" id="st-done">-</div><div class="slbl">완료 건수</div></div>
+          <div class="sc"><div class="sc-bar" style="background:var(--a)"></div><div class="sic">⚠️</div><div class="snum" id="st-over">-</div><div class="slbl">기한 초과</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px" id="stats-mid-grid">
+          <!-- 월별 신청 현황 -->
+          <div class="card">
+            <div class="card-h"><h3 id="stats-chart-title">월별 신청 현황</h3></div>
+            <div class="card-b">
+              <div id="stats-bar-chart" style="display:flex;gap:6px;align-items:flex-end;height:90px;padding:0 4px"></div>
+            </div>
+          </div>
+          <!-- 상태별 현황 -->
+          <div class="card">
+            <div class="card-h"><h3>상태별 현황</h3></div>
+            <div class="card-b" id="stats-status"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="stats-bot-grid">
+          <!-- 긴급도별 현황 -->
+          <div class="card">
+            <div class="card-h"><h3>긴급도별 현황</h3></div>
+            <div class="card-b" id="stats-priority"></div>
+          </div>
+          <!-- 은행별 현황 -->
+          <div class="card">
+            <div class="card-h"><h3>저축은행별 신청 현황</h3></div>
+            <div class="card-b" id="stats-banks"></div>
+          </div>
+        </div>
       </div>
 
       <!-- 계정 설정 -->
@@ -848,6 +988,16 @@ textarea.fc2{resize:vertical;line-height:1.6}
   </div>
 </div>
 
+<!-- 하단 탭바 (모바일) -->
+<div class="bottom-tab" id="bottom-tab">
+  <button class="btab on" data-btab="dash"><span class="bt-ic">📊</span><span>대시보드</span></button>
+  <button class="btab" data-btab="list" id="btab-list"><span class="bt-ic">🎫</span><span>신청목록</span></button>
+  <button class="btab" data-btab="new" id="btab-new" style="display:none"><span class="bt-ic">✏️</span><span>신규신청</span></button>
+  <button class="btab" data-btab="my" id="btab-my" style="display:none"><span class="bt-ic">📋</span><span>내신청</span></button>
+  <button class="btab" data-btab="assigned" id="btab-assigned" style="display:none"><span class="bt-ic">📌</span><span>내처리</span></button>
+  <button class="btab" id="btab-more"><span class="bt-ic">☰</span><span>더보기</span></button>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -927,6 +1077,12 @@ const CAT_FIELDS = {
   ]}
 };
 
+// ── 페이지 로드 시 폼 초기화 (브라우저 자동완성 방지)
+window.addEventListener("load", () => {
+  document.getElementById("li-id").value = "";
+  document.getElementById("li-pw").value = "";
+});
+
 // ── 인증 상태 감지
 onAuthStateChanged(auth, async (fbUser) => {
   if (fbUser) {
@@ -949,7 +1105,35 @@ function showLogin() {
   document.getElementById("login").style.display = "flex";
   document.getElementById("app").style.display = "none";
   if (unsubTickets) { unsubTickets(); unsubTickets = null; }
+
+  // ── 로그인 폼 초기화
+  document.getElementById("li-id").value = "";
+  document.getElementById("li-pw").value = "";
+  const btn = document.getElementById("btn-login");
+  btn.textContent = "로그인 →"; btn.disabled = false;
+  const err = document.getElementById("login-error");
+  if (err) err.textContent = "";
+  document.getElementById("capslock-warn").style.display = "none";
+  // 첫 번째 역할 카드 선택 상태로 초기화
+  document.querySelectorAll(".rcard").forEach((c, i) => {
+    c.classList.toggle("sel", i === 0);
+    c.querySelector(".rc-chk").textContent = i === 0 ? "✓" : "";
+  });
+  document.getElementById("bk-wrap").style.display = "none";
 }
+
+// ── Caps Lock 감지
+document.getElementById("li-pw").addEventListener("keyup", function(e) {
+  const warn = document.getElementById("capslock-warn");
+  warn.style.display = e.getModifierState && e.getModifierState("CapsLock") ? "block" : "none";
+});
+document.getElementById("li-pw").addEventListener("keydown", function(e) {
+  const warn = document.getElementById("capslock-warn");
+  warn.style.display = e.getModifierState && e.getModifierState("CapsLock") ? "block" : "none";
+});
+document.getElementById("li-pw").addEventListener("blur", function() {
+  document.getElementById("capslock-warn").style.display = "none";
+});
 
 // ── 역할 카드
 document.querySelectorAll(".rcard").forEach(card => {
@@ -1052,6 +1236,13 @@ function initApp() {
 
   const cfgName = document.getElementById("cfg-name");
   if (cfgName) cfgName.value = CU.name;
+
+  // ── 모바일 하단 탭 역할별 표시
+  const isMobile = () => window.innerWidth < 768;
+  document.getElementById("btab-new").style.display      = r === "bank" ? "flex" : "none";
+  document.getElementById("btab-my").style.display       = r === "bank" ? "flex" : "none";
+  document.getElementById("btab-assigned").style.display = r === "staff" ? "flex" : "none";
+  document.getElementById("btab-list").style.display     = r === "bank" ? "none" : "flex";
 
   setupRealtime();
   gotoPage("dash");
@@ -1415,6 +1606,144 @@ document.getElementById("bk-filter").addEventListener("change", function() {
 document.getElementById("ba-filter-bank").addEventListener("change", function() { renderBankAccounts(this.value); });
 
 // ── 페이지 이동
+// ── 통계 & 리포트 (Firestore 실시간 데이터 기반)
+function renderStats() {
+  const tickets = window._tickets || [];
+  const now     = new Date();
+  const selYear = parseInt(document.getElementById("stats-year").value) || now.getFullYear();
+  const selBk   = document.getElementById("stats-bk").value;
+
+  // 연도 select 채우기 (처음 한 번)
+  const yearSel = document.getElementById("stats-year");
+  if (yearSel.options.length === 0) {
+    const years = new Set([now.getFullYear(), now.getFullYear() - 1]);
+    tickets.forEach(t => {
+      if (t.createdAt && t.createdAt.toDate) years.add(t.createdAt.toDate().getFullYear());
+    });
+    Array.from(years).sort((a,b) => b-a).forEach(y => {
+      const opt = document.createElement("option");
+      opt.value = y; opt.textContent = y + "년";
+      if (y === now.getFullYear()) opt.selected = true;
+      yearSel.appendChild(opt);
+    });
+  }
+
+  // 은행 select 채우기 (처음 한 번)
+  const bkSel = document.getElementById("stats-bk");
+  if (bkSel.options.length <= 1) {
+    bkSel.innerHTML = "<option value=''>전체 저축은행</option>";
+    BANKS.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b.id; opt.textContent = b.name;
+      bkSel.appendChild(opt);
+    });
+  }
+
+  // 필터 적용
+  let filtered = tickets.filter(t => {
+    const d = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : null;
+    if (!d) return false;
+    if (d.getFullYear() !== selYear) return false;
+    if (selBk && t.bankId !== selBk) return false;
+    return true;
+  });
+
+  // ── KPI
+  const thisMonth = filtered.filter(t => {
+    const d = t.createdAt.toDate();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  const done = filtered.filter(t => t.status === "완료");
+  let avgDays = "-";
+  if (done.length > 0) {
+    const diffs = done.filter(t => t.createdAt && t.updatedAt && t.updatedAt.toDate).map(t => {
+      const ms = t.updatedAt.toDate() - t.createdAt.toDate();
+      return ms / (1000 * 60 * 60 * 24);
+    });
+    if (diffs.length > 0) {
+      avgDays = (diffs.reduce((a,b) => a+b, 0) / diffs.length).toFixed(1) + "<span style='font-size:11px'>일</span>";
+    }
+  }
+
+  const overdue = filtered.filter(t => {
+    if (t.status === "완료") return false;
+    if (!t.dueDate) return false;
+    const due = t.dueDate.toDate ? t.dueDate.toDate() : new Date(t.dueDate);
+    return due < now;
+  }).length;
+
+  document.getElementById("st-month").textContent = thisMonth;
+  document.getElementById("st-avg").innerHTML     = avgDays;
+  document.getElementById("st-done").textContent  = done.length;
+  document.getElementById("st-over").textContent  = overdue;
+
+  // ── 월별 바 차트
+  const MONTHS = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+  const monthly = Array(12).fill(0);
+  filtered.forEach(t => {
+    const m = t.createdAt.toDate().getMonth();
+    monthly[m]++;
+  });
+  const maxVal = Math.max(...monthly, 1);
+  const BAR_MAX_H = 75;
+  const curMonth = now.getMonth();
+  document.getElementById("stats-chart-title").textContent = selYear + "년 월별 신청 현황";
+  document.getElementById("stats-bar-chart").innerHTML = monthly.map((cnt, i) => {
+    const h   = Math.round((cnt / maxVal) * BAR_MAX_H);
+    const isCur = (i === curMonth && selYear === now.getFullYear());
+    const clr = isCur ? "var(--a)" : "var(--p)";
+    const op  = isCur ? "1" : (0.5 + (i / 24)).toFixed(2);
+    return "<div style='flex:1;display:flex;flex-direction:column;align-items:center;gap:3px'>" +
+      "<span style='font-size:9px;color:" + (isCur ? "var(--a)" : "#4A5A7A") + ";font-weight:" + (isCur?"700":"400") + "'>" + (cnt||"") + "</span>" +
+      "<div style='width:100%;height:" + (h||2) + "px;background:" + clr + ";opacity:" + op + ";border-radius:3px 3px 0 0'></div>" +
+      "<span style='font-size:9px;color:" + (isCur ? "var(--a)" : "#7B8BAF") + ";font-weight:" + (isCur?"700":"400") + "'>" + MONTHS[i] + "</span>" +
+      "</div>";
+  }).join("");
+
+  // ── 상태별 현황
+  const statusMap = { "대기": 0, "처리중": 0, "완료": 0, "보류": 0 };
+  filtered.forEach(t => { if (statusMap[t.status] !== undefined) statusMap[t.status]++; });
+  const total = filtered.length || 1;
+  const statusColors = { "대기": "var(--sky)", "처리중": "var(--warn)", "완료": "var(--ok)", "보류": "#A8B4CE" };
+  document.getElementById("stats-status").innerHTML = Object.entries(statusMap).map(([k, v]) =>
+    "<div class='pbar-it'>" +
+    "<div class='pbar-row'><span>" + k + "</span><span style='font-weight:600'>" + v + "건 (" + Math.round(v/total*100) + "%)</span></div>" +
+    "<div class='pbar'><div class='pbar-f' style='width:" + Math.round(v/total*100) + "%;background:" + statusColors[k] + "'></div></div></div>"
+  ).join("") || "<p style='font-size:11px;color:#A8B4CE;text-align:center;padding:12px'>데이터 없음</p>";
+
+  // ── 긴급도별 현황
+  const priMap = { "긴급": 0, "높음": 0, "보통": 0 };
+  filtered.forEach(t => { if (priMap[t.priority] !== undefined) priMap[t.priority]++; });
+  const priColors = { "긴급": "var(--a)", "높음": "var(--warn)", "보통": "var(--ok)" };
+  document.getElementById("stats-priority").innerHTML = Object.entries(priMap).map(([k, v]) =>
+    "<div class='pbar-it'>" +
+    "<div class='pbar-row'><span>" + k + "</span><span style='font-weight:600'>" + v + "건 (" + Math.round(v/total*100) + "%)</span></div>" +
+    "<div class='pbar'><div class='pbar-f' style='width:" + Math.round(v/total*100) + "%;background:" + priColors[k] + "'></div></div></div>"
+  ).join("") || "<p style='font-size:11px;color:#A8B4CE;text-align:center;padding:12px'>데이터 없음</p>";
+
+  // ── 은행별 현황
+  const bankMap = {};
+  filtered.forEach(t => {
+    const key = t.bankId || "unknown";
+    if (!bankMap[key]) bankMap[key] = { name: t.bankName || key, cnt: 0 };
+    bankMap[key].cnt++;
+  });
+  const bankArr = Object.values(bankMap).sort((a,b) => b.cnt - a.cnt);
+  const maxBk   = bankArr[0] ? bankArr[0].cnt : 1;
+  const bkColors = ["var(--p)","var(--sky)","var(--ok)","var(--warn)","var(--a)","#A8B4CE"];
+  document.getElementById("stats-banks").innerHTML = bankArr.map((b, i) =>
+    "<div class='pbar-it'>" +
+    "<div class='pbar-row'><span>" + b.name + "</span><span style='font-weight:600'>" + b.cnt + "건</span></div>" +
+    "<div class='pbar'><div class='pbar-f' style='width:" + Math.round(b.cnt/maxBk*100) + "%;background:" + (bkColors[i] || "#A8B4CE") + "'></div></div></div>"
+  ).join("") || "<p style='font-size:11px;color:#A8B4CE;text-align:center;padding:12px'>데이터 없음</p>";
+}
+
+// ── 통계 필터 변경 이벤트
+document.addEventListener("change", function(e) {
+  if (e.target.id === "stats-year" || e.target.id === "stats-bk") renderStats();
+});
+
 // ── 저축은행 관리 테이블 렌더링
 async function renderBanks() {
   const snap  = await getDocs(collection(db, "banks"));
@@ -1456,12 +1785,40 @@ function gotoPage(pid) {
   if (pg) pg.classList.add("on");
   const sbit = document.querySelector(".sb-it[data-pg='" + pid + "']");
   if (sbit) sbit.classList.add("on");
+
+  // 하단 탭 동기화
+  document.querySelectorAll(".btab[data-btab]").forEach(t => t.classList.remove("on"));
+  const btab = document.querySelector(".btab[data-btab='" + pid + "']");
+  if (btab) btab.classList.add("on");
+
+  // 모바일 사이드바 닫기
+  closeSidebar();
+
   if (pid === "list")          renderTable();
   if (pid === "users")         { renderStaff(); syncTeamSelects(); }
   if (pid === "bank-accounts") renderBankAccounts();
   if (pid === "team")          renderTeamFull();
   if (pid === "banks")         renderBanks();
+  if (pid === "stats")         renderStats();
 }
+
+// ── 모바일 사이드바 토글
+function openSidebar()  { document.getElementById("sidebar").classList.add("open"); document.getElementById("sb-overlay").classList.add("on"); }
+function closeSidebar() { document.getElementById("sidebar").classList.remove("open"); document.getElementById("sb-overlay").classList.remove("on"); }
+
+document.getElementById("btn-hamburger").addEventListener("click", () => {
+  const sb = document.getElementById("sidebar");
+  sb.classList.contains("open") ? closeSidebar() : openSidebar();
+});
+document.getElementById("sb-overlay").addEventListener("click", closeSidebar);
+
+// ── 하단 탭바 이벤트
+document.querySelectorAll(".btab[data-btab]").forEach(tab => {
+  tab.addEventListener("click", () => gotoPage(tab.getAttribute("data-btab")));
+});
+
+// 더보기 버튼 → 사이드바 열기
+document.getElementById("btab-more").addEventListener("click", openSidebar);
 
 // ── 직원 목록
 async function renderStaff(filterTeam) {
