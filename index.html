@@ -853,7 +853,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth as getAuth2, createUserWithEmailAndPassword, signOut as signOut2 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth as getAuth2, createUserWithEmailAndPassword, signInWithEmailAndPassword as signIn2, deleteUser, signOut as signOut2 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBt1aUPZvprlhnkIZ7J_EbcyIrnlAvSW74",
@@ -1790,26 +1790,81 @@ document.getElementById("btn-del-bank").addEventListener("click", async () => {
 document.getElementById("btn-del-user").addEventListener("click", async () => {
   const uid  = document.getElementById("btn-del-user")._uid;
   const name = document.getElementById("ue-name").textContent;
-  if (!confirm("[" + name + "] 계정을 삭제하시겠습니까?\n\n⚠️ Firestore 정보만 삭제됩니다.\nFirebase Authentication 계정은 콘솔에서 별도 삭제 필요합니다.")) return;
+  const email= document.getElementById("ue-email").value.trim();
+  if (!confirm("[" + name + "] 계정을 완전히 삭제하시겠습니까?\n\nFirestore 정보 + Firebase Auth 계정이 모두 삭제됩니다.")) return;
+
+  // 삭제를 위해 임시 비밀번호 확인 필요 (Auth 재인증)
+  const pw = prompt("삭제 확인을 위해 해당 계정의 비밀번호를 입력하세요:\n(모르면 취소 후 Firebase 콘솔에서 삭제)");
+  if (!pw) return;
+
+  const btn = document.getElementById("btn-del-user");
+  btn.textContent = "삭제 중..."; btn.disabled = true;
   try {
+    // auth2로 해당 계정 로그인 → deleteUser
+    const cred = await signIn2(auth2, email, pw);
+    await deleteUser(cred.user);
+    // Firestore 삭제
     await deleteDoc(doc(db, "users", uid));
     document.getElementById("ov-user").classList.remove("on");
     renderStaff();
-    alert(name + " 계정이 삭제되었습니다.");
-  } catch(e) { alert("삭제 실패: " + e.message); }
+    alert(name + " 계정이 완전히 삭제되었습니다.");
+  } catch(e) {
+    const msg = e.code === "auth/wrong-password" || e.code === "auth/invalid-credential"
+      ? "비밀번호가 올바르지 않습니다."
+      : e.code === "auth/user-not-found"
+      ? "Authentication 계정을 찾을 수 없습니다. Firestore만 삭제합니다."
+      : "삭제 실패: " + e.message;
+    if (e.code === "auth/user-not-found") {
+      await deleteDoc(doc(db, "users", uid));
+      document.getElementById("ov-user").classList.remove("on");
+      renderStaff();
+      alert(name + " Firestore 정보가 삭제되었습니다.");
+    } else {
+      alert(msg);
+    }
+  } finally {
+    btn.textContent = "🗑 계정 삭제"; btn.disabled = false;
+    await signOut2(auth2).catch(()=>{});
+  }
 });
 
 // ── 은행 직원 삭제
 document.getElementById("btn-del-bank-user").addEventListener("click", async () => {
-  const buid = document.getElementById("btn-save-edit-bank-user")._buid;
-  const name = document.getElementById("ebu-title").textContent;
-  if (!confirm("[" + name + "] 계정을 삭제하시겠습니까?\n\n⚠️ Firestore 정보만 삭제됩니다.\nFirebase Authentication 계정은 콘솔에서 별도 삭제 필요합니다.")) return;
+  const buid  = document.getElementById("btn-save-edit-bank-user")._buid;
+  const name  = document.getElementById("ebu-title").textContent;
+  const email = document.getElementById("ebu-email").value.trim();
+  if (!confirm("[" + name + "] 계정을 완전히 삭제하시겠습니까?\n\nFirestore 정보 + Firebase Auth 계정이 모두 삭제됩니다.")) return;
+
+  const pw = prompt("삭제 확인을 위해 해당 계정의 비밀번호를 입력하세요:\n(모르면 취소 후 Firebase 콘솔에서 삭제)");
+  if (!pw) return;
+
+  const btn = document.getElementById("btn-del-bank-user");
+  btn.textContent = "삭제 중..."; btn.disabled = true;
   try {
+    const cred = await signIn2(auth2, email, pw);
+    await deleteUser(cred.user);
     await deleteDoc(doc(db, "users", buid));
     document.getElementById("ov-edit-bank-user").classList.remove("on");
     renderBankAccounts(document.getElementById("ba-filter-bank").value);
-    alert(name + " 계정이 삭제되었습니다.");
-  } catch(e) { alert("삭제 실패: " + e.message); }
+    alert(name + " 계정이 완전히 삭제되었습니다.");
+  } catch(e) {
+    const msg = e.code === "auth/wrong-password" || e.code === "auth/invalid-credential"
+      ? "비밀번호가 올바르지 않습니다."
+      : e.code === "auth/user-not-found"
+      ? "Authentication 계정 없음. Firestore만 삭제합니다."
+      : "삭제 실패: " + e.message;
+    if (e.code === "auth/user-not-found") {
+      await deleteDoc(doc(db, "users", buid));
+      document.getElementById("ov-edit-bank-user").classList.remove("on");
+      renderBankAccounts(document.getElementById("ba-filter-bank").value);
+      alert(name + " Firestore 정보가 삭제되었습니다.");
+    } else {
+      alert(msg);
+    }
+  } finally {
+    btn.textContent = "🗑 계정 삭제"; btn.disabled = false;
+    await signOut2(auth2).catch(()=>{});
+  }
 });
 ["mc-bd-close","mc-bd-cancel"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => document.getElementById("ov-bank-detail").classList.remove("on"));
