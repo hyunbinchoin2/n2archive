@@ -742,6 +742,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       </div>
     </div>
     <div class="mft">
+      <button class="btn" style="background:rgba(214,64,69,.08);color:var(--a);border:1px solid rgba(214,64,69,.2);margin-right:auto" id="btn-del-bank-user">🗑 계정 삭제</button>
       <button class="btn btn-g" data-close="ov-edit-bank-user">취소</button>
       <button class="btn btn-p" id="btn-save-edit-bank-user">저장</button>
     </div>
@@ -771,6 +772,37 @@ textarea.fc2{resize:vertical;line-height:1.6}
 </div>
 
 <!-- 은행 상세/편집 모달 -->
+
+<!-- 저축은행 편집 모달 -->
+<div class="ov" id="ov-edit-bank">
+  <div class="modal">
+    <div class="mhd"><div><div class="m-tid">저축은행 편집</div><h3 id="eb-title">-</h3></div><button class="mc" data-close="ov-edit-bank">✕</button></div>
+    <div class="mb">
+      <div class="fgrid">
+        <div class="fg2 ff"><label>은행명<span class="req">*</span></label><input type="text" class="fc2" id="eb-name"></div>
+        <div class="fg2"><label>시스템 버전</label><input type="text" class="fc2" id="eb-ver" placeholder="v4.2.1"></div>
+        <div class="fg2"><label>계약 상태</label>
+          <select class="fc2" id="eb-status">
+            <option value="정상">정상</option>
+            <option value="업그레이드 예정">업그레이드 예정</option>
+            <option value="계약 만료 예정">계약 만료 예정</option>
+            <option value="계약 종료">계약 종료</option>
+          </select>
+        </div>
+        <div class="fg2"><label>N2SOFT 담당자</label><input type="text" class="fc2" id="eb-mgr" placeholder="담당자 이름"></div>
+        <div class="fg2 ff"><label>비고</label><input type="text" class="fc2" id="eb-note" placeholder="추가 메모"></div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)">
+        <button class="btn" style="background:rgba(214,64,69,.08);color:var(--a);border:1px solid rgba(214,64,69,.2)" id="btn-del-bank">🗑 이 저축은행 삭제</button>
+      </div>
+    </div>
+    <div class="mft">
+      <button class="btn btn-g" data-close="ov-edit-bank">취소</button>
+      <button class="btn btn-p" id="btn-save-edit-bank">저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ov-bank-detail">
   <div class="modal">
     <div class="mhd"><div><div class="m-tid" id="bd-badge">상세 정보</div><h3 id="bd-title">한국저축은행</h3></div><button class="mc" id="mc-bd-close">✕</button></div>
@@ -809,6 +841,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       </div>
     </div>
     <div class="mft">
+      <button class="btn" style="background:rgba(214,64,69,.08);color:var(--a);border:1px solid rgba(214,64,69,.2);margin-right:auto" id="btn-del-user">🗑 계정 삭제</button>
       <button class="btn btn-g" id="mc-user-cancel">취소</button>
       <button class="btn btn-p" id="btn-save-user">저장</button>
     </div>
@@ -1333,7 +1366,7 @@ document.getElementById("ov").addEventListener("click", e => { if (e.target === 
 document.querySelectorAll("[data-close]").forEach(el => {
   el.addEventListener("click", () => { document.getElementById(el.getAttribute("data-close")).classList.remove("on"); });
 });
-["ov-bank","ov-bank-detail","ov-user","ov-create-staff","ov-create-bank-user","ov-teams","ov-delegate","ov-edit-bank-user"].forEach(id => {
+["ov-bank","ov-bank-detail","ov-user","ov-create-staff","ov-create-bank-user","ov-teams","ov-delegate","ov-edit-bank-user","ov-edit-bank"].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener("click", e => { if (e.target === e.currentTarget) el.classList.remove("on"); });
 });
@@ -1347,7 +1380,7 @@ document.addEventListener("click", async e => {
   if (tidEl) openModal(tidEl.getAttribute("data-tid"));
 
   const action = e.target.getAttribute("data-action");
-  if (action === "detail")    openBankDetail(e.target.getAttribute("data-bank"));
+  if (action === "detail")    openBankDetail(e.target.getAttribute("data-bank"), false);
   if (action === "edit")      openBankDetail(e.target.getAttribute("data-bank"), true);
   if (action === "edit-user") openUserEdit(e.target.getAttribute("data-user"));
   if (action === "edit-bank-user") {
@@ -1465,6 +1498,7 @@ async function openUserEdit(uid) {
   teamSel.innerHTML = "<option value='-'>미배정</option>" +
     TEAMS.map(t => "<option value='" + (t.name || t) + "'" + ((t.name || t) === u.team ? " selected" : "") + ">" + (t.name || t) + "</option>").join("");
   document.getElementById("btn-save-user")._uid = uid;
+  document.getElementById("btn-del-user")._uid  = uid;
   document.getElementById("ov-user").classList.add("on");
 }
 
@@ -1675,25 +1709,108 @@ document.getElementById("btn-save-bank-user").addEventListener("click", async ()
   } finally { btn.textContent = "계정 생성"; btn.disabled = false; }
 });
 
-async function openBankDetail(bankIdOrName) {
+async function openBankDetail(bankIdOrName, editMode) {
   const bank = BANKS.find(b => b.id === bankIdOrName || b.name === bankIdOrName);
   if (!bank) return;
-  document.getElementById("bd-title").textContent   = bank.name;
-  document.getElementById("bd-ver").textContent     = bank.systemVersion || "-";
-  document.getElementById("bd-status").textContent  = bank.contractStatus || "-";
-  document.getElementById("bd-mgr").textContent     = bank.managerName || "-";
-  const bankTix = (window._tickets || []).filter(t => t.bankId === bank.id);
-  document.getElementById("bd-count").textContent   = bankTix.length + "건";
-  document.getElementById("bd-last").textContent    = bankTix[0] && bankTix[0].createdAt && bankTix[0].createdAt.toDate ? bankTix[0].createdAt.toDate().toLocaleDateString("ko-KR") : "-";
-  document.getElementById("bd-tbody").innerHTML = bankTix.slice(0,5).map(t =>
-    "<tr data-tid='" + t.id + "'><td style='font-size:9px;color:#7B8BAF'>" + (t.ticketNo || t.id.slice(0,8)) + "</td>" +
-    "<td>" + t.title + "</td>" +
-    "<td><span class='bx " + (PB[t.priority]||"b-nor") + "'>" + (t.priority||"-") + "</span></td>" +
-    "<td><span class='bx " + (SB[t.status]||"b-nor") + "'>" + (t.status||"-") + "</span></td>" +
-    "<td>" + (t.assigneeName || "미배정") + "</td></tr>"
-  ).join("") || "<tr><td colspan='5' style='text-align:center;color:#A8B4CE;padding:12px'>신청 내역 없음</td></tr>";
-  document.getElementById("ov-bank-detail").classList.add("on");
+
+  if (editMode) {
+    // 편집 모달
+    document.getElementById("eb-title").textContent = bank.name;
+    document.getElementById("eb-name").value  = bank.name;
+    document.getElementById("eb-ver").value   = bank.systemVersion || "";
+    document.getElementById("eb-status").value = bank.contractStatus || "정상";
+    document.getElementById("eb-mgr").value   = bank.managerName || "";
+    document.getElementById("eb-note").value  = bank.note || "";
+    document.getElementById("btn-save-edit-bank")._bid = bank.id;
+    document.getElementById("btn-del-bank")._bid = bank.id;
+    document.getElementById("btn-del-bank")._bname = bank.name;
+    document.getElementById("ov-edit-bank").classList.add("on");
+  } else {
+    // 상세 모달
+    document.getElementById("bd-title").textContent   = bank.name;
+    document.getElementById("bd-ver").textContent     = bank.systemVersion || "-";
+    document.getElementById("bd-status").textContent  = bank.contractStatus || "-";
+    document.getElementById("bd-mgr").textContent     = bank.managerName || "-";
+    const bankTix = (window._tickets || []).filter(t => t.bankId === bank.id);
+    document.getElementById("bd-count").textContent   = bankTix.length + "건";
+    document.getElementById("bd-last").textContent    = bankTix[0] && bankTix[0].createdAt && bankTix[0].createdAt.toDate
+      ? bankTix[0].createdAt.toDate().toLocaleDateString("ko-KR") : "-";
+    document.getElementById("bd-tbody").innerHTML = bankTix.slice(0,5).map(t =>
+      "<tr data-tid='" + t.id + "'>" +
+      "<td style='font-size:9px;color:#7B8BAF'>" + (t.ticketNo || t.id.slice(0,8)) + "</td>" +
+      "<td>" + t.title + "</td>" +
+      "<td><span class='bx " + (PB[t.priority]||"b-nor") + "'>" + (t.priority||"-") + "</span></td>" +
+      "<td><span class='bx " + (SB[t.status]||"b-nor") + "'>" + (t.status||"-") + "</span></td>" +
+      "<td>" + (t.assigneeName || "미배정") + "</td></tr>"
+    ).join("") || "<tr><td colspan='5' style='text-align:center;color:#A8B4CE;padding:12px'>신청 내역 없음</td></tr>";
+    document.getElementById("ov-bank-detail").classList.add("on");
+  }
 }
+
+// ── 저축은행 편집 저장
+document.getElementById("btn-save-edit-bank").addEventListener("click", async () => {
+  const bid    = document.getElementById("btn-save-edit-bank")._bid;
+  const name   = document.getElementById("eb-name").value.trim();
+  const ver    = document.getElementById("eb-ver").value.trim();
+  const status = document.getElementById("eb-status").value;
+  const mgr    = document.getElementById("eb-mgr").value.trim();
+  const note   = document.getElementById("eb-note").value.trim();
+  if (!name) { alert("은행명을 입력해주세요."); return; }
+  try {
+    await updateDoc(doc(db, "banks", bid), {
+      name, systemVersion: ver, contractStatus: status,
+      managerName: mgr, note
+    });
+    // BANKS 캐시 업데이트
+    const idx = BANKS.findIndex(b => b.id === bid);
+    if (idx >= 0) BANKS[idx] = { ...BANKS[idx], name, systemVersion: ver, contractStatus: status, managerName: mgr, note };
+    await loadMaster();
+    renderBanks();
+    document.getElementById("ov-edit-bank").classList.remove("on");
+    alert("저장되었습니다.");
+  } catch(e) { alert("저장 실패: " + e.message); }
+});
+
+// ── 저축은행 삭제
+document.getElementById("btn-del-bank").addEventListener("click", async () => {
+  const bid   = document.getElementById("btn-del-bank")._bid;
+  const bname = document.getElementById("btn-del-bank")._bname;
+  if (!confirm("[" + bname + "]을 삭제하시겠습니까?\n\n⚠️ 관련 티켓 데이터는 유지됩니다.")) return;
+  try {
+    await deleteDoc(doc(db, "banks", bid));
+    BANKS = BANKS.filter(b => b.id !== bid);
+    await loadMaster();
+    renderBanks();
+    document.getElementById("ov-edit-bank").classList.remove("on");
+    alert(bname + "이 삭제되었습니다.");
+  } catch(e) { alert("삭제 실패: " + e.message); }
+});
+
+// ── 직원 삭제 (Firestore users만 — Auth는 콘솔에서)
+document.getElementById("btn-del-user").addEventListener("click", async () => {
+  const uid  = document.getElementById("btn-del-user")._uid;
+  const name = document.getElementById("ue-name").textContent;
+  if (!confirm("[" + name + "] 계정을 삭제하시겠습니까?\n\n⚠️ Firestore 정보만 삭제됩니다.\nFirebase Authentication 계정은 콘솔에서 별도 삭제 필요합니다.")) return;
+  try {
+    await deleteDoc(doc(db, "users", uid));
+    document.getElementById("ov-user").classList.remove("on");
+    renderStaff();
+    alert(name + " 계정이 삭제되었습니다.");
+  } catch(e) { alert("삭제 실패: " + e.message); }
+});
+
+// ── 은행 직원 삭제
+document.getElementById("btn-del-bank-user").addEventListener("click", async () => {
+  const buid = document.getElementById("btn-save-edit-bank-user")._buid;
+  const name = document.getElementById("ebu-title").textContent;
+  if (!confirm("[" + name + "] 계정을 삭제하시겠습니까?\n\n⚠️ Firestore 정보만 삭제됩니다.\nFirebase Authentication 계정은 콘솔에서 별도 삭제 필요합니다.")) return;
+  try {
+    await deleteDoc(doc(db, "users", buid));
+    document.getElementById("ov-edit-bank-user").classList.remove("on");
+    renderBankAccounts(document.getElementById("ba-filter-bank").value);
+    alert(name + " 계정이 삭제되었습니다.");
+  } catch(e) { alert("삭제 실패: " + e.message); }
+});
 ["mc-bd-close","mc-bd-cancel"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => document.getElementById("ov-bank-detail").classList.remove("on"));
 });
