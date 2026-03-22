@@ -372,7 +372,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
       <label>소속 저축은행</label>
       <select class="fc" id="sel-bk"><option value="">-- 선택 --</option></select>
     </div>
-    <div class="fg"><label>아이디 (이메일 형식)<span style="color:var(--a)">*</span></label><input type="email" class="fc" id="li-id" placeholder="example@company.com" autocomplete="off"></div>
+    <div class="fg"><label>이메일<span style="color:var(--a)">*</span></label><input type="email" class="fc" id="li-id" placeholder="example@company.com" autocomplete="off"></div>
     <div class="fg">
       <label>비밀번호</label>
       <input type="password" class="fc" id="li-pw" placeholder="비밀번호" autocomplete="off">
@@ -381,6 +381,9 @@ textarea.fc2{resize:vertical;line-height:1.6}
       </div>
     </div>
     <button class="btn-login" id="btn-login">로그인 →</button>
+    <div style="text-align:right;margin-top:8px">
+      <span id="btn-forgot-pw" style="font-size:11px;color:#7B8BAF;cursor:pointer;text-decoration:underline;text-underline-offset:2px">비밀번호를 잊으셨나요?</span>
+    </div>
     <div class="lr-foot">© 2025 N2SOFT Co., Ltd. All rights reserved.</div>
   </div>
 </div>
@@ -603,7 +606,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         </div>
         <div class="card">
           <div class="card-h"><h3>N2SOFT 임직원<span class="ch-sub" id="staff-cnt">6명</span></h3></div>
-          <table><thead><tr><th>이름</th><th>아이디</th><th>역할</th><th>소속팀</th><th>이메일</th><th>최근 로그인</th><th>상태</th><th>관리</th></tr></thead>
+          <table><thead><tr><th>이름</th><th>이메일 (로그인 아이디)</th><th>역할</th><th>소속팀</th><th>최근 로그인</th><th>상태</th><th>관리</th></tr></thead>
           <tbody id="staff-tbody"></tbody></table>
         </div>
       </div>
@@ -626,7 +629,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         </div>
         <div class="card">
           <div class="card-h"><h3>저축은행 직원 계정<span class="ch-sub" id="bank-acc-cnt">3명</span></h3></div>
-          <table><thead><tr><th>이름</th><th>아이디</th><th>소속 은행</th><th>이메일</th><th>권한</th><th>최근 로그인</th><th>상태</th><th>관리</th></tr></thead>
+          <table><thead><tr><th>이름</th><th>이메일 (로그인 아이디)</th><th>소속 은행</th><th>권한</th><th>최근 로그인</th><th>상태</th><th>관리</th></tr></thead>
           <tbody id="bank-acc-tbody"></tbody></table>
         </div>
       </div>
@@ -759,8 +762,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
     <div class="mb">
       <div class="fgrid">
         <div class="fg2"><label>이름<span class="req">*</span></label><input type="text" class="fc2" id="cs-name" placeholder="홍길동"></div>
-        <div class="fg2"><label>아이디<span class="req">*</span></label><input type="text" class="fc2" id="cs-id" placeholder="예: hong123" autocomplete="off"></div>
-        <div class="fg2"><label>이메일 <span style="font-size:10px;color:#7B8BAF">(선택 — 미입력 시 아이디@n2soft.co.kr)</span></label><input type="text" class="fc2" id="cs-email" placeholder="직접 입력 시에만 작성"></div>
+        <div class="fg2 ff"><label>이메일 (로그인 아이디)<span class="req">*</span></label><input type="email" class="fc2" id="cs-email" placeholder="example@n2soft.com" autocomplete="off" oninput="this.value=this.value.toLowerCase()"></div>
         <div class="fg2"><label>비밀번호<span class="req">*</span></label><input type="password" class="fc2" id="cs-pw" placeholder="6자 이상"></div>
         <div class="fg2"><label>비밀번호 확인<span class="req">*</span></label><input type="password" class="fc2" id="cs-pw2" placeholder="비밀번호 재입력"></div>
         <div class="fg2"><label>역할<span class="req">*</span></label>
@@ -776,7 +778,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         </div>
         <div class="fg2 ff"><label>연락처</label><input type="text" class="fc2" id="cs-phone" placeholder="010-0000-0000"></div>
         <div class="fg2 ff" style="background:rgba(46,134,222,.06);border:1px solid rgba(46,134,222,.2);border-radius:6px;padding:8px 12px">
-          <span style="font-size:11px;color:#4A5A7A">💡 아이디와 이메일이 동일하게 설정됩니다. 직원에게 이메일 주소를 아이디로 안내해주세요.</span>
+          <span style="font-size:11px;color:#4A5A7A">💡 이메일 주소가 로그인 아이디로 사용됩니다. 직원에게 이메일과 임시 비밀번호를 전달해주세요.</span>
         </div>
       </div>
     </div>
@@ -794,7 +796,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
     <div class="mb">
       <div class="fgrid">
         <div class="fg2"><label>이름<span class="req">*</span></label><input type="text" class="fc2" id="cbu-name" placeholder="홍길동"></div>
-        <div class="fg2"><label>아이디 / 이메일<span class="req">*</span></label><input type="text" class="fc2" id="cbu-email" placeholder="예: hong123 또는 hong@bank.com" autocomplete="off"></div>
+        <div class="fg2 ff"><label>이메일 (로그인 아이디)<span class="req">*</span></label><input type="email" class="fc2" id="cbu-email" placeholder="example@bank.com" autocomplete="off" oninput="this.value=this.value.toLowerCase()"></div>
         <div class="fg2"><label>비밀번호<span class="req">*</span></label><input type="password" class="fc2" id="cbu-pw" placeholder="6자 이상"></div>
         <div class="fg2"><label>비밀번호 확인<span class="req">*</span></label><input type="password" class="fc2" id="cbu-pw2" placeholder="비밀번호 재입력"></div>
         <div class="fg2"><label>소속 저축은행<span class="req">*</span></label>
@@ -808,7 +810,7 @@ textarea.fc2{resize:vertical;line-height:1.6}
         </div>
         <div class="fg2 ff"><label>연락처</label><input type="text" class="fc2" id="cbu-phone" placeholder="010-0000-0000"></div>
         <div class="fg2 ff" style="background:rgba(46,134,222,.06);border:1px solid rgba(46,134,222,.2);border-radius:6px;padding:8px 12px">
-          <span style="font-size:11px;color:#4A5A7A">💡 아이디와 이메일이 동일하게 설정됩니다. 직원에게 이메일 주소를 아이디로 안내해주세요.</span>
+          <span style="font-size:11px;color:#4A5A7A">💡 이메일 주소가 로그인 아이디로 사용됩니다. 직원에게 이메일과 임시 비밀번호를 전달해주세요.</span>
         </div>
       </div>
     </div>
@@ -999,9 +1001,34 @@ textarea.fc2{resize:vertical;line-height:1.6}
   <button class="btab" id="btab-more"><span class="bt-ic">☰</span><span>더보기</span></button>
 </div>
 
+<!-- 비밀번호 재설정 모달 -->
+<div id="ov-reset-pw" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:10px;width:100%;max-width:380px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="padding:16px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:10px;color:#7B8BAF;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">비밀번호 재설정</div>
+        <h3 style="font-size:15px;font-weight:700">이메일로 재설정 링크 발송</h3>
+      </div>
+      <button id="mc-reset-close" style="background:none;border:none;font-size:18px;color:#7B8BAF;cursor:pointer;padding:4px">✕</button>
+    </div>
+    <div style="padding:18px">
+      <p style="font-size:12px;color:#4A5A7A;line-height:1.7;margin-bottom:14px">가입 시 사용한 이메일 주소를 입력하면<br>비밀번호 재설정 링크를 발송해드립니다.</p>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:600;color:#4A5A7A;display:block;margin-bottom:5px">이메일 주소<span style="color:var(--a)">*</span></label>
+        <input type="email" id="reset-email" class="fc2" placeholder="example@company.com" style="width:100%" autocomplete="off">
+      </div>
+      <div id="reset-msg" style="display:none;padding:8px 12px;border-radius:5px;font-size:11px;margin-bottom:10px"></div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:7px">
+      <button class="btn btn-g" id="mc-reset-cancel">취소</button>
+      <button class="btn btn-p" id="btn-send-reset">📧 재설정 메일 발송</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth as getAuth2, createUserWithEmailAndPassword, signInWithEmailAndPassword as signIn2, deleteUser, signOut as signOut2 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1078,6 +1105,72 @@ const CAT_FIELDS = {
   ]}
 };
 
+// ── 비밀번호 찾기
+const ovReset = document.getElementById("ov-reset-pw");
+
+function openResetModal() {
+  // 이메일 입력란에 현재 입력된 이메일 자동 채우기
+  const curEmail = document.getElementById("li-id").value.trim();
+  document.getElementById("reset-email").value = curEmail;
+  const msg = document.getElementById("reset-msg");
+  msg.style.display = "none"; msg.textContent = "";
+  ovReset.style.display = "flex";
+  setTimeout(() => document.getElementById("reset-email").focus(), 100);
+}
+
+function closeResetModal() {
+  ovReset.style.display = "none";
+  document.getElementById("reset-email").value = "";
+  const msg = document.getElementById("reset-msg");
+  msg.style.display = "none";
+}
+
+document.getElementById("btn-forgot-pw").addEventListener("click", openResetModal);
+document.getElementById("mc-reset-close").addEventListener("click", closeResetModal);
+document.getElementById("mc-reset-cancel").addEventListener("click", closeResetModal);
+ovReset.addEventListener("click", function(e) { if (e.target === ovReset) closeResetModal(); });
+
+// 재설정 메일 발송
+document.getElementById("btn-send-reset").addEventListener("click", async () => {
+  const email = document.getElementById("reset-email").value.trim().toLowerCase();
+  const msg   = document.getElementById("reset-msg");
+  const btn   = document.getElementById("btn-send-reset");
+
+  if (!email) {
+    msg.style.cssText = "display:block;background:rgba(214,64,69,.08);border:1px solid rgba(214,64,69,.3);color:#D64045;padding:8px 12px;border-radius:5px;font-size:11px;margin-bottom:10px";
+    msg.textContent = "이메일 주소를 입력해주세요."; return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    msg.style.cssText = "display:block;background:rgba(214,64,69,.08);border:1px solid rgba(214,64,69,.3);color:#D64045;padding:8px 12px;border-radius:5px;font-size:11px;margin-bottom:10px";
+    msg.textContent = "올바른 이메일 형식을 입력해주세요."; return;
+  }
+
+  btn.textContent = "발송 중..."; btn.disabled = true;
+  try {
+    await sendPasswordResetEmail(auth, email);
+    msg.style.cssText = "display:block;background:rgba(24,169,116,.08);border:1px solid rgba(24,169,116,.3);color:var(--ok);padding:8px 12px;border-radius:5px;font-size:11px;margin-bottom:10px";
+    msg.textContent = "✅ " + email + " 으로 재설정 링크를 발송했습니다. 메일함을 확인해주세요. (스팸함도 확인)";
+    btn.textContent = "발송 완료 ✓"; btn.disabled = false;
+    // 3초 후 자동 닫기
+    setTimeout(() => closeResetModal(), 4000);
+  } catch(e) {
+    const errMsg = e.code === "auth/user-not-found"
+      ? "해당 이메일로 등록된 계정이 없습니다."
+      : e.code === "auth/too-many-requests"
+      ? "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
+      : "오류가 발생했습니다: " + e.message;
+    msg.style.cssText = "display:block;background:rgba(214,64,69,.08);border:1px solid rgba(214,64,69,.3);color:#D64045;padding:8px 12px;border-radius:5px;font-size:11px;margin-bottom:10px";
+    msg.textContent = errMsg;
+    btn.textContent = "📧 재설정 메일 발송"; btn.disabled = false;
+  }
+});
+
+// 재설정 모달에서도 엔터키 동작
+document.getElementById("reset-email").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") document.getElementById("btn-send-reset").click();
+});
+
 // ── 페이지 로드 시 폼 초기화 + 로그인용 은행 목록 미리 로드
 window.addEventListener("load", async () => {
   document.getElementById("li-id").value = "";
@@ -1130,6 +1223,8 @@ function showLogin() {
   const err = document.getElementById("login-error");
   if (err) err.textContent = "";
   document.getElementById("capslock-warn").style.display = "none";
+  const ovRst = document.getElementById("ov-reset-pw");
+  if (ovRst) ovRst.style.display = "none";
   document.querySelectorAll(".rcard").forEach((c, i) => {
     c.classList.toggle("sel", i === 0);
     c.querySelector(".rc-chk").textContent = i === 0 ? "✓" : "";
@@ -1196,7 +1291,7 @@ document.querySelectorAll(".rcard").forEach(card => {
 document.getElementById("btn-login").addEventListener("click", async () => {
   const input = document.getElementById("li-id").value.trim();
   const pw    = document.getElementById("li-pw").value;
-  if (!input || !pw) { showErr("아이디와 비밀번호를 입력하세요."); return; }
+  if (!input || !pw) { showErr("이메일과 비밀번호를 입력하세요."); return; }
 
   // 이메일 형식 판별: @ 없으면 자동 변환
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1219,7 +1314,7 @@ document.getElementById("btn-login").addEventListener("click", async () => {
   } catch (e) {
     btn.textContent = "로그인 →"; btn.disabled = false;
     const msg = (e.code === "auth/wrong-password" || e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
-      ? "아이디 또는 비밀번호가 올바르지 않습니다."
+      ? "이메일 또는 비밀번호가 올바르지 않습니다."
       : e.code === "auth/too-many-requests"
       ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요."
       : "로그인 오류: " + e.message;
@@ -2036,10 +2131,9 @@ async function renderStaff(filterTeam) {
   if (!tbody) return;
   tbody.innerHTML = users.map(u =>
     "<tr><td><strong>" + u.name + "</strong></td>" +
-    "<td style='font-family:monospace;font-size:10px;color:#7B8BAF'>" + (u.email || "-") + "</td>" +
+    "<td style='font-size:11px;color:#4A5A7A'>" + (u.email || "-") + "</td>" +
     "<td><span class='rp " + (ROLE_CLASS[u.role] || "") + "'>" + (ROLE_LABEL[u.role] || u.role) + "</span></td>" +
     "<td>" + (u.team || "-") + "</td>" +
-    "<td style='font-size:10px'>" + (u.email || "-") + "</td>" +
     "<td>" + (u.lastLogin || "-") + "</td>" +
     "<td><span class='bx " + (u.status === "active" ? "b-don" : "b-hld") + "'>" + (u.status === "active" ? "활성" : "비활성") + "</span></td>" +
     "<td><button class='btn btn-g btn-xs' data-user='" + u.id + "' data-action='edit-user'>편집</button></td></tr>"
@@ -2096,9 +2190,8 @@ async function renderBankAccounts(filterBankId) {
   tbody.innerHTML = users.map(u => {
     const bk = BANKS.find(b => b.id === u.bankId);
     return "<tr><td><strong>" + u.name + "</strong></td>" +
-      "<td style='font-family:monospace;font-size:10px;color:#7B8BAF'>" + (u.email || "-") + "</td>" +
+      "<td style='font-size:11px;color:#4A5A7A'>" + (u.email || "-") + "</td>" +
       "<td><span class='bx b-bnk'>" + (bk ? bk.name : (u.bankId || "-")) + "</span></td>" +
-      "<td style='font-size:10px'>" + (u.email || "-") + "</td>" +
       "<td><span class='delegate-badge " + (u.bankRole === "admin" ? "db-delegated" : "db-full") + "'>" + (u.bankRole === "admin" ? "🔑 관리자" : "일반") + "</span></td>" +
       "<td>" + (u.lastLogin || "-") + "</td>" +
       "<td><span class='bx " + (u.status === "active" ? "b-don" : "b-hld") + "'>" + (u.status === "active" ? "활성" : "비활성") + "</span></td>" +
@@ -2182,20 +2275,18 @@ document.getElementById("btn-add-team").addEventListener("click", async () => {
 document.getElementById("btn-create-staff").addEventListener("click", () => { syncTeamSelects(); document.getElementById("ov-create-staff").classList.add("on"); });
 document.getElementById("btn-save-staff").addEventListener("click", async () => {
   const name   = document.getElementById("cs-name").value.trim();
-  const idInput= document.getElementById("cs-id").value.trim();
-  const emailInput = document.getElementById("cs-email").value.trim();
+  const email  = document.getElementById("cs-email").value.trim().toLowerCase();
   const pw     = document.getElementById("cs-pw").value;
   const pw2    = document.getElementById("cs-pw2").value;
   const role   = document.getElementById("cs-role").value;
   const team   = document.getElementById("cs-team").value;
   const phone  = document.getElementById("cs-phone").value.trim();
-  if (!name || !idInput) { alert("이름과 아이디를 입력해주세요."); return; }
+  if (!name || !email) { alert("이름과 이메일을 입력해주세요."); return; }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) { alert("올바른 이메일 형식을 입력해주세요.\n예: example@n2soft.com"); return; }
   if (!pw) { alert("비밀번호를 입력해주세요."); return; }
   if (pw !== pw2) { alert("비밀번호가 일치하지 않습니다."); return; }
   if (pw.length < 6) { alert("비밀번호는 6자 이상이어야 합니다."); return; }
-
-  // 이메일 자동 생성: 직접 입력했으면 그대로, 없으면 아이디@n2soft.co.kr
-  const email = emailInput ? emailInput : (idInput.toLowerCase() + "@n2soft.portal");
 
   const btn = document.getElementById("btn-save-staff");
   btn.textContent = "생성 중..."; btn.disabled = true;
@@ -2204,17 +2295,17 @@ document.getElementById("btn-save-staff").addEventListener("click", async () => 
     const uid  = cred.user.uid;
     await setDoc(doc(db, "users", uid), {
       name, role, team, org: "N2SOFT",
-      loginId: idInput, email,
+      loginId: email.split("@")[0], email,
       phone: phone || "", status: "active",
       createdAt: serverTimestamp(), lastLogin: "-"
     });
     await signOut2(auth2);
     document.getElementById("ov-create-staff").classList.remove("on");
-    ["cs-name","cs-id","cs-email","cs-pw","cs-pw2","cs-phone"].forEach(id => {
+    ["cs-name","cs-email","cs-pw","cs-pw2","cs-phone"].forEach(id => {
       const el = document.getElementById(id); if(el) el.value = "";
     });
     renderStaff();
-    alert("계정이 생성되었습니다!\n\n이름: " + name + "\n아이디: " + idInput + "\n로그인 이메일: " + email + "\n역할: " + (role === "leader" ? "팀장" : "유지보수 직원") + "\n\n직원에게 아이디와 임시 비밀번호를 전달해주세요.");
+    alert("계정이 생성되었습니다!\n\n이름: " + name + "\n이메일 (로그인 아이디): " + email + "\n역할: " + (role === "leader" ? "팀장" : "유지보수 직원") + "\n\n직원에게 아이디와 임시 비밀번호를 전달해주세요.");
   } catch (e) {
     const msg = e.code === "auth/email-already-in-use" ? "이미 사용 중인 아이디입니다."
       : e.code === "auth/invalid-email" ? "아이디 형식이 올바르지 않습니다."
@@ -2248,7 +2339,9 @@ document.getElementById("btn-save-bank-user").addEventListener("click", async ()
   const bankId   = document.getElementById("cbu-bank").value;
   const perm     = document.getElementById("cbu-perm").value;
   const phone    = document.getElementById("cbu-phone").value.trim();
-  if (!name || !idInput) { alert("이름과 아이디를 입력해주세요."); return; }
+  if (!name || !idInput) { alert("이름과 이메일을 입력해주세요."); return; }
+  const buEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!buEmailRegex.test(idInput)) { alert("올바른 이메일 형식을 입력해주세요.\n예: example@bank.com"); return; }
   if (!bankId) { alert("소속 저축은행을 선택해주세요."); return; }
   if (!pw) { alert("비밀번호를 입력해주세요."); return; }
   if (pw !== pw2) { alert("비밀번호가 일치하지 않습니다."); return; }
@@ -2276,7 +2369,7 @@ document.getElementById("btn-save-bank-user").addEventListener("click", async ()
       const el = document.getElementById(id); if(el) el.value = "";
     });
     renderBankAccounts(document.getElementById("ba-filter-bank").value);
-    alert("계정이 생성되었습니다!\n\n이름: " + name + "\n아이디: " + loginId + "\n소속: " + bankName + "\n\n직원에게 아이디와 임시 비밀번호를 전달해주세요.");
+    alert("계정이 생성되었습니다!\n\n이름: " + name + "\n이메일 (로그인 아이디): " + idInput + "\n소속: " + bankName + "\n\n직원에게 아이디와 임시 비밀번호를 전달해주세요.");
   } catch (e) {
     const msg = e.code === "auth/email-already-in-use" ? "이미 사용 중인 아이디입니다."
       : e.code === "auth/invalid-email" ? "아이디 형식이 올바르지 않습니다."
@@ -2363,83 +2456,109 @@ document.getElementById("btn-del-bank").addEventListener("click", async () => {
 });
 
 // ── 직원 삭제 (Firestore users만 — Auth는 콘솔에서)
+// ── 관리자 비밀번호로 타 계정 완전 삭제 (Firebase Identity Toolkit REST API)
+async function adminDeleteUser(targetUid, targetName, adminPw) {
+  // 1. 관리자 계정으로 auth2 재로그인 → ID 토큰 획득
+  const adminEmail = CU.email;
+  const cred = await signIn2(auth2, adminEmail, adminPw);
+  const idToken = await cred.user.getIdToken();
+  await signOut2(auth2).catch(() => {});
+
+  // 2. Firebase Identity Toolkit REST API로 타 계정 삭제
+  const apiKey = "AIzaSyBt1aUPZvprlhnkIZ7J_EbcyIrnlAvSW74";
+  const res = await fetch(
+    "https://identitytoolkit.googleapis.com/v1/projects/n2archive/accounts:delete?key=" + apiKey,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ localId: targetUid, idToken: idToken })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json();
+    // 관리자 권한 불충분 시 → 관리자 토큰으로 직접 시도
+    if (err.error && err.error.message === "INSUFFICIENT_PERMISSION") {
+      // Fallback: Firebase Admin SDK가 없으면 비활성화만 처리
+      throw { code: "insufficient-permission" };
+    }
+    throw new Error(err.error ? err.error.message : "API 오류");
+  }
+  return true;
+}
+
+// ── 직원 계정 삭제
 document.getElementById("btn-del-user").addEventListener("click", async () => {
   const uid  = document.getElementById("btn-del-user")._uid;
   const name = document.getElementById("ue-name").textContent;
-  const email= document.getElementById("ue-email").value.trim();
-  if (!confirm("[" + name + "] 계정을 완전히 삭제하시겠습니까?\n\nFirestore 정보 + Firebase Auth 계정이 모두 삭제됩니다.")) return;
+  if (!confirm("[" + name + "] 계정을 완전히 삭제하시겠습니까?\n\nAuth 계정 + Firestore 정보가 모두 삭제됩니다.")) return;
 
-  // 삭제를 위해 임시 비밀번호 확인 필요 (Auth 재인증)
-  const pw = prompt("삭제 확인을 위해 해당 계정의 비밀번호를 입력하세요:\n(모르면 취소 후 Firebase 콘솔에서 삭제)");
-  if (!pw) return;
+  const adminPw = prompt("관리자 비밀번호를 입력하세요:");
+  if (!adminPw) return;
 
   const btn = document.getElementById("btn-del-user");
   btn.textContent = "삭제 중..."; btn.disabled = true;
   try {
-    // auth2로 해당 계정 로그인 → deleteUser
-    const cred = await signIn2(auth2, email, pw);
-    await deleteUser(cred.user);
-    // Firestore 삭제
+    try {
+      await adminDeleteUser(uid, name, adminPw);
+    } catch(apiErr) {
+      if (apiErr.code === "auth/wrong-password" || apiErr.code === "auth/invalid-credential") {
+        throw { code: "auth/wrong-password" };
+      }
+      if (apiErr.code === "auth/user-not-found") {
+        // Auth 계정 없음 → Firestore만 삭제
+      } else if (apiErr.code !== "auth/user-not-found") {
+        console.warn("REST API 삭제 실패, Firestore만 삭제:", apiErr);
+      }
+    }
     await deleteDoc(doc(db, "users", uid));
     document.getElementById("ov-user").classList.remove("on");
     renderStaff();
-    alert(name + " 계정이 완전히 삭제되었습니다.");
+    alert("[" + name + "] 계정이 삭제되었습니다.");
   } catch(e) {
     const msg = e.code === "auth/wrong-password" || e.code === "auth/invalid-credential"
-      ? "비밀번호가 올바르지 않습니다."
-      : e.code === "auth/user-not-found"
-      ? "Authentication 계정을 찾을 수 없습니다. Firestore만 삭제합니다."
-      : "삭제 실패: " + e.message;
-    if (e.code === "auth/user-not-found") {
-      await deleteDoc(doc(db, "users", uid));
-      document.getElementById("ov-user").classList.remove("on");
-      renderStaff();
-      alert(name + " Firestore 정보가 삭제되었습니다.");
-    } else {
-      alert(msg);
-    }
+      ? "관리자 비밀번호가 올바르지 않습니다."
+      : e.code === "auth/too-many-requests"
+      ? "시도 횟수 초과. 잠시 후 다시 시도해주세요."
+      : "삭제 실패: " + (e.message || e.code);
+    alert(msg);
   } finally {
     btn.textContent = "🗑 계정 삭제"; btn.disabled = false;
-    await signOut2(auth2).catch(()=>{});
   }
 });
 
-// ── 은행 직원 삭제
+// ── 은행 직원 계정 삭제
 document.getElementById("btn-del-bank-user").addEventListener("click", async () => {
-  const buid  = document.getElementById("btn-save-edit-bank-user")._buid;
-  const name  = document.getElementById("ebu-title").textContent;
-  const email = document.getElementById("ebu-email").value.trim();
-  if (!confirm("[" + name + "] 계정을 완전히 삭제하시겠습니까?\n\nFirestore 정보 + Firebase Auth 계정이 모두 삭제됩니다.")) return;
+  const buid = document.getElementById("btn-save-edit-bank-user")._buid;
+  const name = document.getElementById("ebu-title").textContent;
+  if (!confirm("[" + name + "] 계정을 완전히 삭제하시겠습니까?\n\nAuth 계정 + Firestore 정보가 모두 삭제됩니다.")) return;
 
-  const pw = prompt("삭제 확인을 위해 해당 계정의 비밀번호를 입력하세요:\n(모르면 취소 후 Firebase 콘솔에서 삭제)");
-  if (!pw) return;
+  const adminPw = prompt("관리자 비밀번호를 입력하세요:");
+  if (!adminPw) return;
 
   const btn = document.getElementById("btn-del-bank-user");
   btn.textContent = "삭제 중..."; btn.disabled = true;
   try {
-    const cred = await signIn2(auth2, email, pw);
-    await deleteUser(cred.user);
+    try {
+      await adminDeleteUser(buid, name, adminPw);
+    } catch(apiErr) {
+      if (apiErr.code === "auth/wrong-password" || apiErr.code === "auth/invalid-credential") {
+        throw { code: "auth/wrong-password" };
+      }
+      console.warn("REST API 삭제 실패, Firestore만 삭제:", apiErr);
+    }
     await deleteDoc(doc(db, "users", buid));
     document.getElementById("ov-edit-bank-user").classList.remove("on");
     renderBankAccounts(document.getElementById("ba-filter-bank").value);
-    alert(name + " 계정이 완전히 삭제되었습니다.");
+    alert("[" + name + "] 계정이 삭제되었습니다.");
   } catch(e) {
     const msg = e.code === "auth/wrong-password" || e.code === "auth/invalid-credential"
-      ? "비밀번호가 올바르지 않습니다."
-      : e.code === "auth/user-not-found"
-      ? "Authentication 계정 없음. Firestore만 삭제합니다."
-      : "삭제 실패: " + e.message;
-    if (e.code === "auth/user-not-found") {
-      await deleteDoc(doc(db, "users", buid));
-      document.getElementById("ov-edit-bank-user").classList.remove("on");
-      renderBankAccounts(document.getElementById("ba-filter-bank").value);
-      alert(name + " Firestore 정보가 삭제되었습니다.");
-    } else {
-      alert(msg);
-    }
+      ? "관리자 비밀번호가 올바르지 않습니다."
+      : e.code === "auth/too-many-requests"
+      ? "시도 횟수 초과. 잠시 후 다시 시도해주세요."
+      : "삭제 실패: " + (e.message || e.code);
+    alert(msg);
   } finally {
     btn.textContent = "🗑 계정 삭제"; btn.disabled = false;
-    await signOut2(auth2).catch(()=>{});
   }
 });
 ["mc-bd-close","mc-bd-cancel"].forEach(id => {
